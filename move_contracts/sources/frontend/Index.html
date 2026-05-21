@@ -300,7 +300,7 @@
       <div class="wallet-dot" style="background:#f59e0b"></div>
       Not connected
     </div>
-    <button id="connect-wallet-btn" onclick="connectWallet()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:background 0.2s;">🔗 Connect Wallet</button>
+    <button id="connect-wallet-btn" onclick="if(window.connectWallet){window.connectWallet()}else{alert('SDK still loading, please try again in 2 seconds.')}" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:background 0.2s;">🔗 Connect Wallet</button>
     <div class="live-badge">✓ Testnet V4</div>
   </div>
 </header>
@@ -872,7 +872,7 @@
         <input type="text" id="surcon-escrow-id" placeholder="0xe20b5a37a520eb2150c75a52a880ab78..." />
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <button class="btn btn-download-doc" style="flex:1;" onclick="surconDownloadDocFromEscrow()">⬇ Load & download document from chain</button>
+        <button class="btn btn-download-doc" style="flex:1;" onclick="window.surconDownloadDocFromEscrow()">⬇ Load & download document from chain</button>
         <button class="btn btn-approve" style="flex:1;" onclick="regulatoryApprove()">🏛️ Approve on-chain (regulatory_approve)</button>
       </div>
       <div id="surcon-approve-output" class="alert success" style="display:none;margin-top:8px;white-space:pre-line;"></div>
@@ -978,8 +978,25 @@
 </div>
 
 <!-- Sui SDK via CDN -->
+<!-- Import map: resolves all @mysten/* bare specifiers for the browser -->
+<script type="importmap">
+{
+  "imports": {
+    "@mysten/sui":          "https://esm.sh/@mysten/sui@1.21.1",
+    "@mysten/sui/client":   "https://esm.sh/@mysten/sui@1.21.1/client",
+    "@mysten/sui/transactions": "https://esm.sh/@mysten/sui@1.21.1/transactions",
+    "@mysten/bcs":          "https://esm.sh/@mysten/bcs@1.1.1",
+    "@mysten/sui/bcs":      "https://esm.sh/@mysten/sui@1.21.1/bcs",
+    "@mysten/sui/keypairs/ed25519": "https://esm.sh/@mysten/sui@1.21.1/keypairs/ed25519",
+    "@mysten/sui/utils":    "https://esm.sh/@mysten/sui@1.21.1/utils",
+    "@mysten/sui/cryptography": "https://esm.sh/@mysten/sui@1.21.1/cryptography"
+  }
+}
+</script>
+
 <script type="module">
-import { SuiClient, getFullnodeUrl, Transaction } from 'https://esm.sh/@mysten/sui@1.21.1';
+import { SuiClient, getFullnodeUrl } from 'https://esm.sh/@mysten/sui@1.21.1/client';
+import { Transaction } from 'https://esm.sh/@mysten/sui@1.21.1/transactions';
 
 // ============================================================
 // CONSTANTS
@@ -1510,6 +1527,10 @@ window.claimExpired = async function() {
 // ============================================================
 window.connectWallet    = connectWallet;
 window.disconnectWallet = disconnectWallet;
+
+// Safety: also assign immediately in case module loads async
+window.connectWallet    = window.connectWallet    || connectWallet;
+window.disconnectWallet = window.disconnectWallet || disconnectWallet;
 
 // ============================================================
 // REAL TRANSACTION: regulatory_approve (SURCON approves on-chain)
