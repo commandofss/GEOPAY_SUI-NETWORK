@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GeoPay — How It Works</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; min-height: 100vh; padding: 2rem 1rem; }
+
+  .page { max-width: 900px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 2.5rem; }
+  .header h1 { font-size: 2rem; font-weight: 700; color: #0F6E56; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: #6b7570; max-width: 500px; margin: 0 auto; }
+
+  /* ACTORS ROW */
+  .actors { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+  .actor { background: #fff; border-radius: 16px; padding: 1rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .actor-icon { font-size: 2rem; margin-bottom: 6px; }
+  .actor-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .actor-desc { font-size: 11px; color: #6b7570; line-height: 1.4; }
+  .actor.client { border-top: 4px solid #1D9E75; }
+  .actor.surveyor { border-top: 4px solid #c8961e; }
+  .actor.contract { border-top: 4px solid #6366f1; }
+  .actor.surcon { border-top: 4px solid #e05c1a; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+
+  .step-row { display: flex; align-items: stretch; gap: 0; margin-bottom: 0; }
+
+  .step-num-col { width: 60px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .step-circle { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0; z-index: 1; }
+  .step-line { width: 3px; flex: 1; min-height: 20px; }
+
+  .step-card { flex: 1; background: #fff; border-radius: 16px; padding: 1rem 1.25rem; margin: 4px 0 4px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid transparent; }
+  .step-card.client-step { border-left-color: #1D9E75; }
+  .step-card.surveyor-step { border-left-color: #c8961e; }
+  .step-card.contract-step { border-left-color: #6366f1; }
+  .step-card.surcon-step { border-left-color: #e05c1a; }
+
+  .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-icon { font-size: 1.5rem; }
+  .step-title { font-size: 15px; font-weight: 700; color: #1a1f1c; }
+  .step-who { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 20px; margin-left: auto; }
+  .who-client { background: #E1F5EE; color: #085041; }
+  .who-surveyor { background: #FFF8E7; color: #633806; }
+  .who-contract { background: #ede9fe; color: #4338ca; }
+  .who-surcon { background: #fde8d8; color: #9a3412; }
+
+  .step-desc { font-size: 13px; color: #4a5568; line-height: 1.6; margin-bottom: 8px; }
+  .step-note { font-size: 11px; color: #6b7570; background: #f8f9f7; border-radius: 8px; padding: 6px 10px; border-left: 3px solid #e0e5e2; }
+
+  .step-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: 10px; font-family: monospace; background: #f8f9f7; border: 1px solid #e0e5e2; border-radius: 6px; padding: 2px 8px; color: #6b7570; }
+  .tag.green { background: #E1F5EE; border-color: #9FE1CB; color: #085041; }
+  .tag.purple { background: #ede9fe; border-color: #c4b5fd; color: #4338ca; }
+  .tag.orange { background: #fde8d8; border-color: #fdba74; color: #9a3412; }
+  .tag.gold { background: #FFF8E7; border-color: #FAC775; color: #633806; }
+  .tag.red { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+
+  /* SPECIAL SECTIONS */
+  .split-section { background: #fff; border-radius: 16px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .split-title { text-align: center; font-size: 14px; font-weight: 700; color: #1a1f1c; margin-bottom: 1rem; }
+  .split-bars { display: grid; grid-template-columns: 3fr 7fr; gap: 10px; }
+  .split-bar { border-radius: 12px; padding: 1rem; text-align: center; }
+  .split-bar.s { background: #E1F5EE; }
+  .split-bar.r { background: #E6F1FB; }
+  .split-bar-pct { font-size: 2rem; font-weight: 700; font-family: monospace; }
+  .split-bar.s .split-bar-pct { color: #085041; }
+  .split-bar.r .split-bar-pct { color: #0C447C; }
+  .split-bar-label { font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .split-bar.s .split-bar-label { color: #085041; }
+  .split-bar.r .split-bar-label { color: #0C447C; }
+  .split-bar-sub { font-size: 10px; color: #6b7570; margin-top: 2px; }
+
+  /* ALTERNATIVE PATH */
+  .alt-section { background: #fff3cd; border: 2px dashed #f59e0b; border-radius: 16px; padding: 1.25rem 1.5rem; margin: 1rem 0; }
+  .alt-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .alt-desc { font-size: 12px; color: #78350f; line-height: 1.6; }
+
+  /* DISPUTE PATH */
+  .dispute-section { background: #fff; border: 2px solid #e05c1a; border-radius: 16px; padding: 1.25rem 1.5rem; margin: 1rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .dispute-title { font-size: 13px; font-weight: 700; color: #9a3412; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .dispute-steps { display: flex; flex-direction: column; gap: 8px; }
+  .dispute-step { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #4a5568; }
+  .dispute-dot { width: 24px; height: 24px; border-radius: 50%; background: #fde8d8; color: #9a3412; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+  /* STATE BADGES */
+  .states { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 1.5rem 0; }
+  .state-badge { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: monospace; }
+  .state-pending { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .state-submitted { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  .state-approved { background: #E1F5EE; color: #085041; border: 1px solid #9FE1CB; }
+  .state-completed { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .state-disputed { background: #fde8d8; color: #9a3412; border: 1px solid #fdba74; }
+  .state-expired { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+  .state-cancelled { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .state-arrow { font-size: 14px; color: #9ca3af; display: flex; align-items: center; }
+
+  /* LEGEND */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 1.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4a5568; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* FOOTER */
+  .footer { text-align: center; margin-top: 2rem; font-size: 11px; color: #9ca3af; font-family: monospace; line-height: 1.8; }
+
+  @media (max-width: 600px) {
+    .actors { grid-template-columns: 1fr 1fr; }
+    .split-bars { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>📍 GeoPay — How It Works</h1>
+    <p>A simple step-by-step guide to getting your land surveyed and paying safely on the blockchain</p>
+  </div>
+
+  <!-- ACTORS -->
+  <div class="actors">
+    <div class="actor client">
+      <div class="actor-icon">🏠</div>
+      <div class="actor-name">Client</div>
+      <div class="actor-desc">Land owner who needs a survey done and pays the fee</div>
+    </div>
+    <div class="actor surveyor">
+      <div class="actor-icon">📐</div>
+      <div class="actor-name">Surveyor</div>
+      <div class="actor-desc">Licensed professional who does the field survey work</div>
+    </div>
+    <div class="actor contract">
+      <div class="actor-icon">🔒</div>
+      <div class="actor-name">Smart Contract</div>
+      <div class="actor-desc">Holds the money safely until work is done — no middleman</div>
+    </div>
+    <div class="actor surcon">
+      <div class="actor-icon">🏛️</div>
+      <div class="actor-name">SURCON/NIS</div>
+      <div class="actor-desc">Government body that approves the survey and receives 70%</div>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps">
+
+    <!-- STEP 1 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#1D9E75;">1</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card client-step">
+        <div class="step-header">
+          <div class="step-icon">📏</div>
+          <div class="step-title">Enter Your Land Details</div>
+          <span class="step-who who-client">Client</span>
+        </div>
+        <div class="step-desc">Tell GeoPay how big your land is (in square meters) and whether it is private or commercial. The system automatically finds the correct official fee from the Kwara State government fee schedule.</div>
+        <div class="step-tags">
+          <span class="tag green">20 official fee tiers</span>
+          <span class="tag green">Private or Commercial</span>
+          <span class="tag green">Auto-calculated</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#1D9E75;">2</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card client-step">
+        <div class="step-header">
+          <div class="step-icon">💰</div>
+          <div class="step-title">Lock Your Payment in Escrow</div>
+          <span class="step-who who-client">Client</span>
+        </div>
+        <div class="step-desc">You pay the official survey fee in SUI tokens. The money goes into a <strong>smart contract (escrow)</strong> — think of it like a digital safe. Nobody can touch the money until the surveyor completes the job.</div>
+        <div class="step-note">⏰ <strong>7-Day Deadline starts now</strong> — the surveyor must submit the survey document within 7 days or you get your money back automatically.</div>
+        <div class="step-tags">
+          <span class="tag purple">STATE: PENDING</span>
+          <span class="tag green">Money safely locked</span>
+          <span class="tag gold">7-day countdown starts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#c8961e;">3</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card surveyor-step">
+        <div class="step-header">
+          <div class="step-icon">🗺️</div>
+          <div class="step-title">Surveyor Does the Field Work</div>
+          <span class="step-who who-surveyor">Surveyor</span>
+        </div>
+        <div class="step-desc">The licensed surveyor goes to the land, measures the boundaries, and prepares the official survey plan. This must be done within <strong>7 days</strong> of the client locking payment.</div>
+        <div class="step-note">📐 The surveyor prepares the Digital Red Copy — the official survey document in DWG, PDF, AutoCAD or any format.</div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#c8961e;">4</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card surveyor-step">
+        <div class="step-header">
+          <div class="step-icon">📁</div>
+          <div class="step-title">Upload the Survey Document</div>
+          <span class="step-who who-surveyor">Surveyor</span>
+        </div>
+        <div class="step-desc">The surveyor uploads the completed survey document (in any format — DWG, PDF, AutoCAD, DXF, PNG) to <strong>Walrus</strong> — a decentralized storage system. The file is stored permanently and cannot be deleted or tampered with.</div>
+        <div class="step-note">🦭 Walrus is like a permanent, tamper-proof filing cabinet on the blockchain. The document stays there forever.</div>
+        <div class="step-tags">
+          <span class="tag purple">STATE: SUBMITTED</span>
+          <span class="tag green">Stored on Walrus</span>
+          <span class="tag orange">SURCON/NIS notified</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#e05c1a;">5</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card surcon-step">
+        <div class="step-header">
+          <div class="step-icon">🏛️</div>
+          <div class="step-title">SURCON Reviews & Approves</div>
+          <span class="step-who who-surcon">SURCON/NIS</span>
+        </div>
+        <div class="step-desc">The regulatory body (SURCON/NIS) is automatically notified when the document is uploaded. They review the survey plan to confirm it meets all official standards, then <strong>approve it directly on the blockchain</strong>.</div>
+        <div class="step-note">✅ This approval is recorded permanently on-chain — it cannot be faked or altered by anyone.</div>
+        <div class="step-tags">
+          <span class="tag purple">STATE: APPROVED</span>
+          <span class="tag orange">On-chain approval</span>
+          <span class="tag green">Client notified</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step-row">
+      <div class="step-num-col">
+        <div class="step-circle" style="background:#1D9E75;">6</div>
+        <div class="step-line" style="background:#e0e5e2;"></div>
+      </div>
+      <div class="step-card client-step">
+        <div class="step-header">
+          <div class="step-icon">✅</div>
+          <div class="step-title">Client Confirms & Payment is Released</div>
+          <span class="step-who who-client">Client</span>
+        </div>
+        <div class="step-desc">Once SURCON approves the document, the client confirms they are satisfied. The smart contract <strong>automatically splits and sends the payment</strong> — no manual calculation, no delays, no middleman.</div>
+        <div class="step-tags">
+          <span class="tag purple">STATE: COMPLETED</span>
+          <span class="tag green">Instant payment split</span>
+          <span class="tag green">Zero middleman</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAYMENT SPLIT -->
+  <div class="split-section">
+    <div class="split-title">💰 How the Payment is Split Automatically</div>
+    <div class="split-bars">
+      <div class="split-bar s">
+        <div class="split-bar-pct">30%</div>
+        <div class="split-bar-label">📐 Surveyor</div>
+        <div class="split-bar-sub">Payment for professional service</div>
+      </div>
+      <div class="split-bar r">
+        <div class="split-bar-pct">70%</div>
+        <div class="split-bar-label">🏛️ SURCON / NIS</div>
+        <div class="split-bar-sub">Mandatory regulatory remittance</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRACT STATES -->
+  <div style="background:#fff;border-radius:16px;padding:1.25rem 1.5rem;margin:1rem 0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+    <div style="font-size:13px;font-weight:700;color:#1a1f1c;margin-bottom:12px;text-align:center;">📊 Job Status — What Each Stage Means</div>
+    <div class="states">
+      <span class="state-badge state-pending">PENDING</span>
+      <span class="state-arrow">→</span>
+      <span class="state-badge state-submitted">SUBMITTED</span>
+      <span class="state-arrow">→</span>
+      <span class="state-badge state-approved">APPROVED</span>
+      <span class="state-arrow">→</span>
+      <span class="state-badge state-completed">COMPLETED</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;">
+      <div style="text-align:center;font-size:11px;color:#6b7570;padding:6px;">💰 Money locked, waiting for surveyor</div>
+      <div style="text-align:center;font-size:11px;color:#6b7570;padding:6px;">📁 Document uploaded, waiting for SURCON</div>
+      <div style="text-align:center;font-size:11px;color:#6b7570;padding:6px;">✅ SURCON approved, client to confirm</div>
+      <div style="text-align:center;font-size:11px;color:#6b7570;padding:6px;">🎉 Payment split, job done!</div>
+    </div>
+  </div>
+
+  <!-- ALTERNATIVE PATH - EXPIRED -->
+  <div class="alt-section">
+    <div class="alt-title">⏰ What if the Surveyor Misses the 7-Day Deadline?</div>
+    <div class="alt-desc">
+      <strong>No problem!</strong> If the surveyor does not upload the survey document within 7 days, the client can claim a <strong>full automatic refund</strong> directly from the smart contract — no need to contact anyone, no delays, no arguments. The blockchain handles it automatically.
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <span class="state-badge state-expired" style="font-size:10px;">EXPIRED</span>
+      <span style="font-size:11px;color:#78350f;display:flex;align-items:center;">→ Full refund automatically sent to client wallet</span>
+    </div>
+  </div>
+
+  <!-- DISPUTE PATH -->
+  <div class="dispute-section">
+    <div class="dispute-title">⚖️ What if There is a Disagreement?</div>
+    <div class="dispute-steps">
+      <div class="dispute-step">
+        <div class="dispute-dot">1</div>
+        <div>Either the <strong>client or surveyor</strong> can raise a dispute if they are not satisfied. They explain the reason on the blockchain.</div>
+      </div>
+      <div class="dispute-step">
+        <div class="dispute-dot">2</div>
+        <div>The job is <strong>frozen</strong> — nobody can touch the money while the dispute is being reviewed.</div>
+      </div>
+      <div class="dispute-step">
+        <div class="dispute-dot">3</div>
+        <div><strong>SURCON/NIS reviews</strong> the dispute fairly and decides on a custom split — for example, 50% to surveyor and 50% refund to client.</div>
+      </div>
+      <div class="dispute-step">
+        <div class="dispute-dot">4</div>
+        <div>The smart contract <strong>automatically sends</strong> each party their agreed amount — instant and tamper-proof.</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <span class="state-badge state-disputed" style="font-size:10px;">DISPUTED</span>
+      <span style="font-size:11px;color:#9a3412;margin-left:8px;">→ SURCON resolves with fair custom split</span>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1D9E75;border-radius:50%;"></div> Client action</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c8961e;border-radius:50%;"></div> Surveyor action</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6366f1;border-radius:50%;"></div> Smart contract</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e05c1a;border-radius:50%;"></div> SURCON/NIS action</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    GeoPay · Sui Overflow 2026 · Nigeria 🇳🇬<br/>
+    Digitizing land administration, one block at a time.
+  </div>
+
+</div>
+</body>
+</html>

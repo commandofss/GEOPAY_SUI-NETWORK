@@ -1,1 +1,119 @@
+# GeoPay — Important Reference Notes
+# Ahmed Omokunmi Muhammed | Sui Overflow 2026
 
+## ============================
+## DEPLOYED CONTRACT INFO
+## ============================
+
+Network:          Sui Testnet
+Package ID (V3):  0xc1222e16659a5be11e3488c2359cce641a4c536e2569d707a22444a57b56c2a7
+Package ID (V1):  0xdce69a787695732f11a8164dac2340bdd197a372a8bbe35b0e18ed9f942a8818
+Upgrade Cap:      0x2b2ec8688decab1c02a141fc3ca7f7bd286275ad766d5a0e7871f30cfc10563d
+Module:           geopay_escrow
+Explorer:         https://suiexplorer.com/object/0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8?network=testnet
+
+## ============================
+## WALLET INFO
+## ============================
+
+Active Address:   0xfe7f21df1b4267f709861bf688ab7f1e87457c3c2b7f30f982e7fab3a9edff4c
+Network:          Testnet
+
+## ============================
+## TEST TRANSACTIONS
+## ============================
+
+Test 1 - Create Escrow:
+  Transaction:    8MMjeneQ22US4nqthcQFhugKYvibaBfxQ2BrheHrBsCP
+  Escrow ID:      0xe20b5a37a520eb2150c75a52a880ab78a6e5b690b09ad2f76055f27e08cc41fc
+  Status:         Success
+
+Test 2 - Submit Red Copy:
+  Transaction:    2kQ67wwoxDzr9pMeKsdRGWRodVXYByD3LkwqW16NNJve
+  Status:         Success
+
+## ============================
+## CLI COMMANDS (Quick Reference)
+## ============================
+
+# Check balance
+& "C:\Users\commandofss\Downloads\sui.exe" client balance
+
+# Check objects
+& "C:\Users\commandofss\Downloads\sui.exe" client objects
+
+# Build contract
+& "C:\Users\commandofss\Downloads\sui.exe" move build
+
+# Test contract
+& "C:\Users\commandofss\Downloads\sui.exe" move test
+
+# Upgrade contract (keeps same Package ID)
+& "C:\Users\commandofss\Downloads\sui.exe" client upgrade --gas-budget 100000000 --upgrade-capability 0x2b2ec8688decab1c02a141fc3ca7f7bd286275ad766d5a0e7871f30cfc10563d
+
+# Create Escrow (V1)
+& "C:\Users\commandofss\Downloads\sui.exe" client call --package 0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8 --module geopay_escrow --function create_escrow --args <COIN_ID> <SURVEYOR> <SURCON> "JOB-ID" "Description" <AREA_M2> <LAND_TYPE> --gas-budget 10000000
+
+# Submit Red Copy (V1)
+& "C:\Users\commandofss\Downloads\sui.exe" client call --package 0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8 --module geopay_escrow --function submit_red_copy --args <ESCROW_ID> "DOCUMENT_HASH" --gas-budget 10000000
+
+# Submit Red Copy V2 (with document metadata)
+& "C:\Users\commandofss\Downloads\sui.exe" client call --package 0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8 --module geopay_escrow --function submit_red_copy_v2 --args <ESCROW_ID> "FILE_HASH" "FILE_NAME.dwg" "DWG" "https://ipfs.io/ipfs/..." 0x6 --gas-budget 10000000
+
+# Confirm and Release Payment (70/30)
+& "C:\Users\commandofss\Downloads\sui.exe" client call --package 0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8 --module geopay_escrow --function confirm_and_release --args <ESCROW_ID> --gas-budget 10000000
+
+# Claim Expired Refund (after 7 days)
+& "C:\Users\commandofss\Downloads\sui.exe" client call --package 0xcbbe6dacf3735559a1e7f4018d01b2c2ecaa5f0ebac323c238952eded0cd13f8 --module geopay_escrow --function claim_expired_refund --args <ESCROW_ID> 0x6 --gas-budget 10000000
+
+## ============================
+## CONTRACT FEATURES
+## ============================
+
+V1 Features:
+  - create_escrow         → Create payment escrow
+  - submit_red_copy       → Upload document hash
+  - confirm_and_release   → Release 70/30 payment
+  - cancel_escrow         → Cancel and refund client
+
+V2 Features (NEW):
+  - create_escrow_v2      → Create escrow with 7-day time lock
+  - submit_red_copy_v2    → Upload with full document metadata
+                            (DWG, PDF, AutoCAD, DXF, PNG, any format)
+  - claim_expired_refund  → Auto refund if surveyor misses deadline
+
+Events (Regulatory Body Notifications):
+  - EscrowCreated         → Fired when job is created
+  - RedCopySubmitted      → Fired when document uploaded (notifies SURCON)
+  - EscrowCompleted       → Fired when payment released
+  - EscrowRefunded        → Fired when refund or expiry happens
+
+## ============================
+## FEE SCHEDULE (Kwara State)
+## ============================
+
+Land Type 0 = Private | Land Type 1 = Commercial
+
+Tier  | Area (m²)      | Private (₦)  | Commercial (₦)
+------|----------------|--------------|---------------
+1     | 0 - 690        | 150,000      | 225,000
+2     | 691 - 1,160    | 190,000      | 285,000
+3     | 1,161 - 1,620  | 210,000      | 315,000
+4     | 1,621 - 2,090  | 230,000      | 345,000
+5     | 2,091 - 2,550  | 250,000      | 375,000
+6     | 2,551 - 3,020  | 265,000      | 397,500
+7     | 3,021 - 3,480  | 275,000      | 412,500
+8     | 3,481 - 3,950  | 295,000      | 442,500
+9     | 3,951 - 4,410  | 315,000      | 472,500
+10    | 4,411 - 4,880  | 335,000      | 502,500
+11    | 4,881 - 7,200  | 420,000      | 630,000
+12    | 7,201 - 1Ha    | 505,000      | 757,500
+13    | 1Ha - 2Ha      | 580,000      | 870,000
+14    | 2Ha - 5Ha      | 665,000      | 997,500
+15    | 5Ha - 10Ha     | 750,000      | 1,125,000
+16    | 10Ha - 15Ha    | 835,000      | 1,252,500
+17    | 15Ha - 20Ha    | 920,000      | 1,380,000
+18    | 20Ha - 30Ha    | 995,000      | 1,492,500
+19    | 30Ha - 40Ha    | 1,060,000    | 1,590,000
+20    | 40Ha - 50Ha    | 1,145,000    | 1,717,500
++     | Above 50Ha     | +15,000/Ha   | +22,500/Ha
