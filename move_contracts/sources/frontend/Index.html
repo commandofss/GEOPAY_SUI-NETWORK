@@ -277,6 +277,66 @@
   .inbox-unread { border-left: 3px solid var(--green); }
   .tab-surcon { display: none; } /* hidden until SURCON wallet connects */
 
+  /* ===== WALLET MODAL ===== */
+  .wm-overlay {
+    display: none; position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(3px);
+    align-items: center; justify-content: center;
+  }
+  .wm-overlay.open { display: flex; }
+  .wm-box {
+    background: #fff; border-radius: 18px; width: 360px; max-width: 94vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22); overflow: hidden;
+    animation: wmSlideUp 0.22s ease;
+  }
+  @keyframes wmSlideUp { from { transform: translateY(30px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+  .wm-head {
+    background: linear-gradient(135deg, var(--green-dark), #1a3c5e);
+    color: #fff; padding: 18px 20px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .wm-head-text { flex: 1; }
+  .wm-head h3 { font-size: 15px; font-weight: 600; margin: 0; }
+  .wm-head p  { font-size: 11px; opacity: 0.75; margin: 3px 0 0; }
+  .wm-close { background: rgba(255,255,255,0.15); border: none; color: #fff;
+    width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wm-close:hover { background: rgba(255,255,255,0.3); }
+  .wm-body { padding: 14px 16px 18px; }
+  .wm-section-label {
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 12px 0 8px; padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wm-wallet-btn {
+    width: 100%; display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); cursor: pointer; margin-bottom: 7px;
+    transition: all 0.18s; font-family: var(--sans); text-decoration: none;
+  }
+  .wm-wallet-btn:hover { background: var(--green-light); border-color: var(--green); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+  .wm-wallet-icon { width: 36px; height: 36px; border-radius: 10px; background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0; overflow: hidden; }
+  .wm-wallet-icon img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
+  .wm-wallet-name { font-size: 13px; font-weight: 600; color: var(--text); text-align: left; }
+  .wm-wallet-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; text-align: left; }
+  .wm-wallet-badge {
+    margin-left: auto; font-size: 10px; font-weight: 600; padding: 3px 9px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  .wm-wallet-badge.detected { background: var(--green-light); color: var(--green-dark); border: 1px solid #9FE1CB; }
+  .wm-wallet-badge.mobile   { background: var(--blue-light);  color: var(--blue);       border: 1px solid #B5D4F4; }
+  .wm-wallet-badge.install  { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+  .wm-status { text-align: center; padding: 18px 10px; font-size: 13px; color: var(--text-muted); }
+  .wm-spinner { display: inline-block; width: 22px; height: 22px; border: 3px solid var(--border);
+    border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wm-footer { padding: 10px 16px 14px; text-align: center; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 4px; }
+  .wm-footer a { color: var(--green-dark); text-decoration: none; }
+  .wm-footer a:hover { text-decoration: underline; }
+
   @media (max-width: 600px) {
     .form-row, .form-row-3, .metrics-3, .metrics-2, .metrics-4 { grid-template-columns: 1fr; }
     .hero h1 { font-size: 1.6rem; }
@@ -289,6 +349,26 @@
 </head>
 <body>
 
+<!-- WALLET SELECT MODAL -->
+<div class="wm-overlay" id="wm-overlay" onclick="wmOverlayClick(event)">
+  <div class="wm-box" id="wm-box">
+    <div class="wm-head">
+      <div class="wm-head-text">
+        <h3>🔗 Connect Wallet</h3>
+        <p>Choose your Sui wallet to continue</p>
+      </div>
+      <button class="wm-close" onclick="closeWalletModal()">✕</button>
+    </div>
+    <div class="wm-body" id="wm-body">
+      <!-- filled dynamically -->
+    </div>
+    <div class="wm-footer">
+      New to Sui? <a href="https://suiwallet.com" target="_blank">Get Sui Wallet</a> &nbsp;·&nbsp;
+      <a href="https://slush.app" target="_blank">Get Slush</a>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header>
   <div class="logo">
@@ -300,8 +380,8 @@
       <div class="wallet-dot" style="background:#f59e0b"></div>
       Not connected
     </div>
-    <button id="connect-wallet-btn" onclick="if(window.connectWallet){window.connectWallet()}else{alert('SDK still loading, please try again in 2 seconds.')}" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:background 0.2s;">🔗 Connect Wallet</button>
-    <div class="live-badge">✓ Testnet V4</div>
+    <button id="connect-wallet-btn" onclick="connectWallet()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:20px;padding:5px 14px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:background 0.2s;">🔗 Connect Wallet</button>
+    <div class="live-badge">✓ Testnet V8</div>
   </div>
 </header>
 
@@ -977,876 +1057,6 @@
   <div id="notif-body">...</div>
 </div>
 
-<!-- Sui SDK via CDN -->
-<!-- Import map: resolves all @mysten/* bare specifiers for the browser -->
-<script type="importmap">
-{
-  "imports": {
-    "@mysten/sui":          "https://esm.sh/@mysten/sui@1.21.1",
-    "@mysten/sui/client":   "https://esm.sh/@mysten/sui@1.21.1/client",
-    "@mysten/sui/transactions": "https://esm.sh/@mysten/sui@1.21.1/transactions",
-    "@mysten/bcs":          "https://esm.sh/@mysten/bcs@1.1.1",
-    "@mysten/sui/bcs":      "https://esm.sh/@mysten/sui@1.21.1/bcs",
-    "@mysten/sui/keypairs/ed25519": "https://esm.sh/@mysten/sui@1.21.1/keypairs/ed25519",
-    "@mysten/sui/utils":    "https://esm.sh/@mysten/sui@1.21.1/utils",
-    "@mysten/sui/cryptography": "https://esm.sh/@mysten/sui@1.21.1/cryptography"
-  }
-}
-</script>
-
-<script type="module">
-import { SuiClient, getFullnodeUrl } from 'https://esm.sh/@mysten/sui@1.21.1/client';
-import { Transaction } from 'https://esm.sh/@mysten/sui@1.21.1/transactions';
-
-// ============================================================
-// CONSTANTS
-// ============================================================
-const PACKAGE_ID = '0x537e7ab3acddaa671530f588ed3e2c79e48acd8480e7bdbbaeba8548a3c3050d';
-const MODULE     = 'geopay_escrow';
-const CLOCK_ID   = '0x6';
-const SURCON_ADDR= '0xf44f68ac7f90d87796c1e2d654be2b00651d25cf7ec83185519f8c939ff1307b';
-const NETWORK    = 'testnet';
-
-const suiClient = new SuiClient({ url: getFullnodeUrl(NETWORK) });
-
-// ============================================================
-// WALLET STATE
-// ============================================================
-let walletAddress = null;
-let walletAdapter = null; // the connected wallet object
-
-// ============================================================
-// WALLET DETECTION & CONNECTION
-// ============================================================
-async function detectWallets() {
-  const candidates = [];
-
-  // ── Wallet Standard (Slush, Sui Wallet v2+, OKX, etc.) ──
-  // Modern wallets register via window.navigator.wallets (Chrome) or window.wallets
-  const registries = [
-    window.navigator?.wallets,
-    window.wallets,
-    window.__suiWallets,
-  ].filter(Boolean);
-
-  for (const registry of registries) {
-    const wallets = typeof registry.get === 'function'
-      ? registry.get()
-      : Array.isArray(registry) ? registry : [];
-    for (const w of wallets) {
-      if (w && (w.name || w.accounts)) {
-        candidates.push({ name: w.name || 'Sui Wallet', obj: w });
-      }
-    }
-  }
-
-  // ── Legacy APIs (older extensions) ──
-  if (window.suiWallet)    candidates.push({ name: 'Sui Wallet (legacy)', obj: window.suiWallet });
-  if (window.martian?.sui) candidates.push({ name: 'Martian', obj: window.martian.sui });
-  if (window.ethosWallet)  candidates.push({ name: 'Ethos',   obj: window.ethosWallet });
-  if (window.nightly?.sui) candidates.push({ name: 'Nightly', obj: window.nightly.sui });
-
-  // ── Slush-specific fallback: it may expose via window.slushWallet ──
-  if (window.slushWallet)  candidates.push({ name: 'Slush',   obj: window.slushWallet });
-
-  return candidates;
-}
-
-async function connectWallet() {
-  const btn = document.getElementById('connect-wallet-btn');
-  if (btn) { btn.textContent = '⏳ Connecting...'; btn.disabled = true; }
-
-  try {
-    // Give wallet extensions 500ms to inject if page just loaded
-    await new Promise(r => setTimeout(r, 500));
-
-    const wallets = await detectWallets();
-
-    if (wallets.length === 0) {
-      // Last resort — try the Wallet Standard getWallets() global
-      if (typeof window.getWallets === 'function') {
-        const reg = window.getWallets();
-        const all = reg.get?.() ?? [];
-        for (const w of all) wallets.push({ name: w.name, obj: w });
-      }
-    }
-
-    if (wallets.length === 0) {
-      alert('No Sui wallet detected.\n\nMake sure:\n1. Slush/Sui wallet extension is installed\n2. The extension is ENABLED for this site\n3. Try refreshing the page\n\nThen click Connect again.');
-      if (btn) { btn.textContent = '🔗 Connect Wallet'; btn.disabled = false; }
-      return;
-    }
-
-    // Use the first available wallet
-    const chosen = wallets[0];
-    walletAdapter = chosen.obj;
-
-    // Try all known connection methods
-    let accounts = [];
-
-    // Wallet Standard connect()
-    if (typeof walletAdapter.connect === 'function') {
-      try {
-        const res = await walletAdapter.connect();
-        accounts = res?.accounts?.map(a => typeof a === 'string' ? a : a.address)
-          ?? (res?.address ? [res.address] : []);
-      } catch(e) { console.warn('connect() failed:', e); }
-    }
-
-    // Wallet Standard features API (Slush uses this)
-    if (accounts.length === 0 && walletAdapter.features?.['standard:connect']) {
-      try {
-        const res = await walletAdapter.features['standard:connect'].connect();
-        accounts = res?.accounts?.map(a => a.address) ?? [];
-      } catch(e) { console.warn('features connect failed:', e); }
-    }
-
-    // Legacy requestPermissions (old Sui Wallet)
-    if (accounts.length === 0 && typeof walletAdapter.requestPermissions === 'function') {
-      try {
-        await walletAdapter.requestPermissions({ permissions: ['viewAccount', 'suggestTransactions'] });
-        const res = await walletAdapter.getAccounts();
-        accounts = res.map(a => typeof a === 'string' ? a : a.address);
-      } catch(e) { console.warn('requestPermissions failed:', e); }
-    }
-
-    // getAccounts fallback
-    if (accounts.length === 0 && typeof walletAdapter.getAccounts === 'function') {
-      try {
-        const res = await walletAdapter.getAccounts();
-        accounts = res.map(a => typeof a === 'string' ? a : a.address);
-      } catch(e) { console.warn('getAccounts failed:', e); }
-    }
-
-    // accounts property directly
-    if (accounts.length === 0 && Array.isArray(walletAdapter.accounts)) {
-      accounts = walletAdapter.accounts.map(a => typeof a === 'string' ? a : a.address);
-    }
-
-    if (!accounts || accounts.length === 0) {
-      throw new Error('Wallet connected but no accounts returned. Please unlock your wallet and try again.');
-    }
-
-    walletAddress = accounts[0];
-    onWalletConnected(walletAddress, chosen.name);
-
-  } catch (err) {
-    console.error('Wallet connect error:', err);
-    alert('Wallet connection failed:\n' + err.message);
-    if (btn) { btn.textContent = '🔗 Connect Wallet'; btn.disabled = false; }
-  }
-}
-
-function disconnectWallet() {
-  walletAddress = null;
-  walletAdapter = null;
-  updateWalletUI(null);
-  showToast('👋 Wallet disconnected', 'You have been disconnected.', '', 3000);
-}
-
-function onWalletConnected(address, walletName) {
-  walletAddress = address;
-  updateWalletUI(address, walletName);
-  checkWalletForSurcon(address);
-  // Pre-fill client address field
-  const clientField = document.querySelector('input[placeholder="Your wallet address (auto-filled on connect)" value=""]');
-  if (clientField) clientField.value = address;
-  showToast('✅ Wallet connected!', walletName + ' · ' + shortAddr(address), 'green', 4000);
-}
-
-function updateWalletUI(address, walletName) {
-  const pill = document.getElementById('wallet-pill-display');
-  const btn  = document.getElementById('connect-wallet-btn');
-  if (address) {
-    if (pill) pill.innerHTML = `<div class="wallet-dot"></div>${shortAddr(address)}`;
-    if (btn)  { btn.textContent = '🔓 Disconnect'; btn.onclick = disconnectWallet; btn.disabled = false; }
-  } else {
-    if (pill) pill.innerHTML = `<div class="wallet-dot" style="background:#f59e0b"></div>Not connected`;
-    if (btn)  { btn.textContent = '🔗 Connect Wallet'; btn.onclick = connectWallet; btn.disabled = false; }
-  }
-}
-
-function shortAddr(a) {
-  return a ? a.slice(0,8)+'...'+a.slice(-4) : '';
-}
-
-// ============================================================
-// HELPER: sign and execute a transaction
-// ============================================================
-async function signAndExecute(tx) {
-  if (!walletAddress || !walletAdapter) throw new Error('Wallet not connected. Please connect your wallet first.');
-
-  const txBytes = await tx.build({ client: suiClient });
-  const opts = { showEffects: true, showEvents: true, showObjectChanges: true };
-
-  let result;
-
-  // 1. Wallet Standard: sui:signAndExecuteTransaction (Slush, modern wallets)
-  if (walletAdapter.features?.['sui:signAndExecuteTransaction']?.signAndExecuteTransaction) {
-    result = await walletAdapter.features['sui:signAndExecuteTransaction'].signAndExecuteTransaction({
-      transaction: tx, options: opts
-    });
-  }
-  // 2. Wallet Standard: sui:signAndExecuteTransactionBlock (older standard)
-  else if (walletAdapter.features?.['sui:signAndExecuteTransactionBlock']?.signAndExecuteTransactionBlock) {
-    result = await walletAdapter.features['sui:signAndExecuteTransactionBlock'].signAndExecuteTransactionBlock({
-      transactionBlock: tx, options: opts
-    });
-  }
-  // 3. Direct method: signAndExecuteTransaction
-  else if (typeof walletAdapter.signAndExecuteTransaction === 'function') {
-    result = await walletAdapter.signAndExecuteTransaction({ transaction: tx, options: opts });
-  }
-  // 4. Direct method: signAndExecuteTransactionBlock (legacy)
-  else if (typeof walletAdapter.signAndExecuteTransactionBlock === 'function') {
-    result = await walletAdapter.signAndExecuteTransactionBlock({
-      transactionBlock: tx, options: opts
-    });
-  }
-  // 5. Sign then execute separately
-  else if (walletAdapter.features?.['sui:signTransaction']?.signTransaction) {
-    const { signature, bytes } = await walletAdapter.features['sui:signTransaction'].signTransaction({
-      transaction: tx
-    });
-    result = await suiClient.executeTransactionBlock({
-      transactionBlock: bytes,
-      signature,
-      options: opts
-    });
-  }
-  else {
-    throw new Error('Wallet does not support transaction signing. Please use Slush or a compatible Sui wallet.');
-  }
-
-  if (result.effects?.status?.status === 'failure') {
-    throw new Error('Transaction failed: ' + (result.effects.status.error || 'Unknown error'));
-  }
-  return result;
-}
-
-// ============================================================
-// HELPER: get a coin for the exact fee amount
-// ============================================================
-async function getCoinForFee(feeMist) {
-  if (!walletAddress) throw new Error('Wallet not connected.');
-  const coins = await suiClient.getCoins({ owner: walletAddress, coinType: '0x2::sui::SUI' });
-  // Find a coin with enough balance
-  const suitable = coins.data.find(c => BigInt(c.balance) >= BigInt(feeMist));
-  if (!suitable) throw new Error(`Insufficient SUI balance. Need ${feeMist} MIST (${(feeMist/1e9).toFixed(4)} SUI).`);
-  return suitable.coinObjectId;
-}
-
-// ============================================================
-// HELPER: parse fee from display string back to MIST
-// ============================================================
-function feeDisplayToMist() {
-  const raw = document.getElementById('escrow-fee-display').value;
-  // Format is "₦150,000 (0.150 SUI)" — extract SUI value and convert
-  const match = raw.match(/\(([0-9.]+)\s*SUI\)/);
-  if (match) return Math.round(parseFloat(match[1]) * 1e9);
-  // Fallback: parse ₦ amount and use JS fee arrays
-  const area = parseFloat(document.getElementById('escrow-area').value) || 0;
-  const type = document.getElementById('escrow-type').value;
-  return calcFeeMist(area, type);
-}
-
-function calcFeeMist(area, type) {
-  const fp=[150000000,190000000,210000000,230000000,250000000,265000000,275000000,295000000,315000000,335000000,420000000,505000000,580000000,665000000,750000000,835000000,920000000,995000000,1060000000,1145000000];
-  const fc=[225000000,285000000,315000000,345000000,375000000,397500000,412500000,442500000,472500000,502500000,630000000,757500000,870000000,997500000,1125000000,1252500000,1380000000,1492500000,1590000000,1717500000];
-  const tiers=[690,1160,1620,2090,2550,3020,3480,3950,4410,4880,7200,10000,20000,50000,100000,150000,200000,300000,400000,500000];
-  for (let i=0;i<tiers.length;i++) { if (area<=tiers[i]) return (type==='p'?fp:fc)[i]; }
-  return type==='p' ? Math.floor(area/10000)*15000000 : Math.floor(area/10000)*22500000;
-}
-
-// ============================================================
-// TEXT ENCODER HELPER
-// ============================================================
-function toBytes(str) {
-  return Array.from(new TextEncoder().encode(str));
-}
-
-// ============================================================
-// REAL TRANSACTION: createEscrowV1
-// ============================================================
-window.createEscrowV1 = async function() {
-  document.getElementById('escrow-id-box').style.display='none';
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-
-  const surveyor = document.getElementById('surveyor-addr').value.trim();
-  if (!surveyor || !surveyor.startsWith('0x')) { alert('Please enter a valid surveyor wallet address.'); return; }
-
-  const jobId   = document.getElementById('job-id').value.trim() || 'JOB-001';
-  const desc    = document.getElementById('escrow-desc').value.trim() || 'Survey';
-  const areaN   = parseInt(document.getElementById('escrow-area').value) || 500;
-  const typeVal = document.getElementById('escrow-type').value === 'p' ? 0 : 1;
-  const feeMist = calcFeeMist(areaN, document.getElementById('escrow-type').value);
-
-  showOutput('escrow-output', '⏳ Building transaction — create_escrow (no deadline)...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const coinId = await getCoinForFee(feeMist);
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-
-    // Split exact fee from coin
-    const [paymentCoin] = tx.splitCoins(tx.object(coinId), [tx.pure.u64(feeMist)]);
-
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::create_escrow`,
-      arguments: [
-        paymentCoin,
-        tx.pure.address(surveyor),
-        tx.pure.address(SURCON_ADDR),
-        tx.pure.vector('u8', toBytes(jobId)),
-        tx.pure.vector('u8', toBytes(desc)),
-        tx.pure.u64(areaN),
-        tx.pure.u8(typeVal),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-    const digest = result.digest;
-
-    // Extract new escrow object ID from created objects
-    const created = result.objectChanges?.filter(o => o.type === 'created' && o.objectType?.includes('SurveyEscrow'));
-    const escrowId = created?.[0]?.objectId ?? 'Check explorer for object ID';
-
-    showOutput('escrow-output',
-      `✅ Escrow created (V1 — no deadline)!\n` +
-      `Tx digest: ${digest}\n` +
-      `Fee locked: ${(feeMist/1e9).toFixed(3)} SUI`
-    );
-    showEscrowIdBox(escrowId);
-    showToast('🔒 Escrow created!', jobId + ' · ' + (feeMist/1e9).toFixed(3) + ' SUI locked on-chain.', 'green', 6000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('escrow-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: createEscrowV2 (with deadline)
-// ============================================================
-window.createEscrowV2 = async function() {
-  document.getElementById('escrow-id-box').style.display='none';
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-
-  const deadlineVal = document.getElementById('escrow-deadline').value;
-  if (!deadlineVal) { alert('Please pick a deadline date first, or use "Create escrow (no deadline)" instead.'); return; }
-
-  const chosen = new Date(deadlineVal + 'T00:00:00');
-  const today  = new Date(); today.setHours(0,0,0,0);
-  if (chosen <= today) { alert('Deadline must be a future date.'); return; }
-
-  const surveyor = document.getElementById('surveyor-addr').value.trim();
-  if (!surveyor || !surveyor.startsWith('0x')) { alert('Please enter a valid surveyor wallet address.'); return; }
-
-  const jobId       = document.getElementById('job-id').value.trim() || 'JOB-001';
-  const desc        = document.getElementById('escrow-desc').value.trim() || 'Survey';
-  const areaN       = parseInt(document.getElementById('escrow-area').value) || 500;
-  const typeVal     = document.getElementById('escrow-type').value === 'p' ? 0 : 1;
-  const feeMist     = calcFeeMist(areaN, document.getElementById('escrow-type').value);
-  const deadlineLabel = chosen.toLocaleDateString('en-NG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const diff = Math.round((chosen - today) / (1000*60*60*24));
-
-  showOutput('escrow-output', `⏳ Building transaction — create_escrow_v2\nDeadline: ${deadlineLabel}\nWaiting for wallet approval...`, 'info');
-
-  try {
-    const coinId = await getCoinForFee(feeMist);
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-
-    const [paymentCoin] = tx.splitCoins(tx.object(coinId), [tx.pure.u64(feeMist)]);
-
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::create_escrow_v2`,
-      arguments: [
-        paymentCoin,
-        tx.pure.address(surveyor),
-        tx.pure.address(SURCON_ADDR),
-        tx.pure.vector('u8', toBytes(jobId)),
-        tx.pure.vector('u8', toBytes(desc)),
-        tx.pure.u64(areaN),
-        tx.pure.u8(typeVal),
-        tx.object(CLOCK_ID),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-    const digest = result.digest;
-    const created = result.objectChanges?.filter(o => o.type === 'created' && o.objectType?.includes('SurveyEscrow'));
-    const escrowId = created?.[0]?.objectId ?? 'Check explorer for object ID';
-
-    showOutput('escrow-output',
-      `✅ Escrow created with deadline!\n` +
-      `📅 Deadline: ${deadlineLabel} (${diff} days)\n` +
-      `Fee locked: ${(feeMist/1e9).toFixed(3)} SUI\n` +
-      `Tx: ${digest}`
-    );
-    showEscrowIdBox(escrowId);
-    const cliDeadline = document.getElementById('cli-deadline-val');
-    if (cliDeadline) cliDeadline.textContent = chosen.getTime();
-    showToast('⏰ Escrow with deadline created!', jobId + ' · Deadline: ' + deadlineLabel, 'green', 6000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('escrow-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: submitRedCopyV1
-// ============================================================
-window.submitRedCopyV1 = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('doc-escrow-id').value.trim();
-  const hash     = document.getElementById('doc-hash').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-  if (!hash) { alert('Please enter a document hash.'); return; }
-
-  showOutput('doc-output', '⏳ Submitting hash on-chain (submit_red_copy)...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::submit_red_copy`,
-      arguments: [
-        tx.object(escrowId),
-        tx.pure.vector('u8', toBytes(hash)),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-    showOutput('doc-output',
-      `✅ Red Copy submitted on-chain! (V1)\n` +
-      `Hash stored · Status: Pending → Submitted\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('📄 Document submitted!', 'Hash stored on-chain. Regulatory body notified via event.', 'green', 5000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('doc-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: submitRedCopyV2 (full metadata)
-// ============================================================
-window.submitRedCopyV2 = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('doc-escrow-id').value.trim();
-  const hash     = document.getElementById('doc-hash').value.trim();
-  const name     = document.getElementById('doc-name').value.trim() || 'document.dwg';
-  const fmt      = document.getElementById('doc-format').value || 'DWG';
-  const url      = document.getElementById('doc-url').value.trim() || '';
-
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-  if (!hash) { alert('Please enter a document hash (IPFS CID or Walrus blob ID).'); return; }
-
-  showOutput('doc-output', `⏳ Submitting document metadata on-chain (submit_red_copy_v2)...\nFile: ${name} (${fmt})\nWaiting for wallet approval...`, 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::submit_red_copy_v2`,
-      arguments: [
-        tx.object(escrowId),
-        tx.pure.vector('u8', toBytes(hash)),
-        tx.pure.vector('u8', toBytes(name)),
-        tx.pure.vector('u8', toBytes(fmt)),
-        tx.pure.vector('u8', toBytes(url)),
-        tx.object(CLOCK_ID),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-    showOutput('doc-output',
-      `✅ Document submitted on-chain! (V2)\n` +
-      `File: ${name} (${fmt})\n` +
-      `Status: Pending → Submitted\n` +
-      `SURCON/NIS notified via RedCopySubmitted event!\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('📁 Document submitted (V2)!', name + ' · SURCON/NIS notified on-chain.', 'green', 6000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('doc-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: confirmRelease (70/30 split)
-// ============================================================
-window.confirmRelease = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('release-escrow-id').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-
-  if (!confirm('Release payment? This will send 30% to the Surveyor and 70% to SURCON/NIS. This cannot be undone.')) return;
-
-  showOutput('release-output', '⏳ Processing confirm_and_release...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::confirm_and_release`,
-      arguments: [ tx.object(escrowId) ],
-    });
-
-    const result = await signAndExecute(tx);
-
-    // Read amounts from events if available
-    const events = result.events ?? [];
-    const completedEvt = events.find(e => e.type?.includes('EscrowCompleted'));
-    const surveyorAmt = completedEvt?.parsedJson?.surveyor_amount;
-    const regulatoryAmt = completedEvt?.parsedJson?.regulatory_amount;
-    const surStr = surveyorAmt   ? (surveyorAmt/1e9).toFixed(4)+' SUI (30%)'   : '30%';
-    const regStr = regulatoryAmt ? (regulatoryAmt/1e9).toFixed(4)+' SUI (70%)' : '70%';
-
-    showOutput('release-output',
-      `✅ Payment released!\n` +
-      `→ Surveyor received: ${surStr}\n` +
-      `→ SURCON/NIS received: ${regStr}\n` +
-      `→ Status: Completed ✓\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('✅ Payment released!', 'Surveyor 30% + SURCON 70% sent on-chain.', 'green', 8000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('release-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: cancelEscrow
-// ============================================================
-window.cancelEscrow = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('cancel-escrow-id').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-
-  if (!confirm('Cancel this escrow? Full payment will be refunded to your wallet. This cannot be undone.')) return;
-
-  showOutput('cancel-output', '⏳ Processing cancel_escrow...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::cancel_escrow`,
-      arguments: [ tx.object(escrowId) ],
-    });
-
-    const result = await signAndExecute(tx);
-    showOutput('cancel-output',
-      `✅ Escrow cancelled!\n` +
-      `Full payment refunded to your wallet.\n` +
-      `Status: Cancelled\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('❌ Escrow cancelled', 'Full refund sent to your wallet.', '', 5000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('cancel-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: claimExpired
-// ============================================================
-window.claimExpired = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('expire-escrow-id').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-
-  showOutput('expire-output', '⏳ Checking deadline and claiming refund...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::claim_expired_refund`,
-      arguments: [
-        tx.object(escrowId),
-        tx.object(CLOCK_ID),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-    showOutput('expire-output',
-      `✅ Refund claimed!\n` +
-      `Surveyor missed the agreed deadline.\n` +
-      `Full payment refunded to your wallet.\n` +
-      `Status: Expired\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('⏰ Expired refund claimed!', 'Full payment returned to your wallet.', '', 5000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('expire-output', '❌ Error: ' + err.message, 'warning');
-  }
-};
-
-// ============================================================
-// EXPOSE connectWallet to global scope for the button
-// ============================================================
-window.connectWallet    = connectWallet;
-window.disconnectWallet = disconnectWallet;
-
-// Safety: also assign immediately in case module loads async
-window.connectWallet    = window.connectWallet    || connectWallet;
-window.disconnectWallet = window.disconnectWallet || disconnectWallet;
-
-// ============================================================
-// REAL TRANSACTION: regulatory_approve (SURCON approves on-chain)
-// V4: moves escrow SUBMITTED → APPROVED, unlocking client release
-// ============================================================
-window.regulatoryApprove = async function() {
-  if (!walletAddress) { alert('Please connect your SURCON wallet first.'); return; }
-  const escrowId = document.getElementById('surcon-escrow-id').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-
-  if (!confirm('Approve this escrow on-chain?\n\nThis calls regulatory_approve and moves the escrow from SUBMITTED → APPROVED.\n\nThe client will then be able to release the 70/30 payment.\n\nThis transaction must be signed by the SURCON wallet.')) return;
-
-  showSurconApproveOutput('⏳ Building regulatory_approve transaction...\nWaiting for SURCON wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::regulatory_approve`,
-      arguments: [
-        tx.object(escrowId),
-        tx.object(CLOCK_ID),   // &Clock required by V4
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-
-    // Read approval event
-    const events = result.events ?? [];
-    const approvedEvt = events.find(e => e.type?.includes('EscrowApproved'));
-    const approvedAt  = approvedEvt?.parsedJson?.approved_at;
-    const timeStr = approvedAt ? new Date(parseInt(approvedAt)).toLocaleString('en-NG') : 'now';
-
-    showSurconApproveOutput(
-      `✅ Document approved on-chain!\n` +
-      `Escrow: ${escrowId}\n` +
-      `State: SUBMITTED → APPROVED\n` +
-      `Approved at: ${timeStr}\n` +
-      `The client can now call confirm_and_release.\n` +
-      `Tx: ${result.digest}`,
-      'success'
-    );
-
-    // Update surcon-pending-count
-    const pCount = document.getElementById('surcon-pending-count');
-    if (pCount) pCount.textContent = Math.max(0, parseInt(pCount.textContent||'0') - 1);
-    const aCount = document.getElementById('surcon-approved-count');
-    if (aCount) aCount.textContent = parseInt(aCount.textContent||'0') + 1;
-
-    addSurconLog(escrowId.slice(0,10)+'...', 'client', 'surveyor');
-
-    showToast(
-      '🏛️ SURCON approved on-chain!',
-      escrowId.slice(0,16)+'... · APPROVED · Client can now release payment.',
-      'green', 8000
-    );
-
-  } catch (err) {
-    console.error(err);
-    showSurconApproveOutput('❌ Transaction failed:\n' + err.message + '\n\nMake sure:\n• This wallet is the regulatory_body of the escrow\n• The escrow is in SUBMITTED state', 'warning');
-  }
-};
-
-function showSurconApproveOutput(msg, type) {
-  const el = document.getElementById('surcon-approve-output');
-  el.className = 'alert ' + (type === 'success' ? 'success' : type === 'info' ? 'info' : 'warning');
-  el.textContent = msg;
-  el.style.display = 'flex';
-  el.style.whiteSpace = 'pre-line';
-}
-
-// ============================================================
-// REAL TRANSACTION: raise_dispute (client or surveyor)
-// V4: freezes escrow — only SURCON can resolve it
-// ============================================================
-window.raiseDispute = async function() {
-  if (!walletAddress) { alert('Please connect your wallet first.'); return; }
-  const escrowId = document.getElementById('dispute-escrow-id').value.trim();
-  const reason   = document.getElementById('dispute-reason').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-  if (!reason) { alert('Please enter a reason for the dispute.'); return; }
-
-  if (!confirm(
-    'Raise a dispute on this escrow?\n\n' +
-    'This freezes the escrow — neither client nor surveyor can release or cancel it.\n' +
-    'Only SURCON/NIS can resolve it with a custom split.\n\n' +
-    'Reason: ' + reason
-  )) return;
-
-  showOutput('dispute-output', '⏳ Building raise_dispute transaction...\nWaiting for wallet approval...', 'info');
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::raise_dispute`,
-      arguments: [
-        tx.object(escrowId),
-        tx.pure.vector('u8', toBytes(reason)),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-
-    showOutput('dispute-output',
-      `⚠️ Dispute raised on-chain!\n` +
-      `Escrow: ${escrowId}\n` +
-      `State: → DISPUTED (frozen)\n` +
-      `Reason: ${reason}\n` +
-      `SURCON/NIS has been notified via DisputeRaised event.\n` +
-      `Only SURCON can resolve this with resolve_dispute.\n` +
-      `Tx: ${result.digest}`
-    );
-    showToast('⚠️ Dispute raised!', 'Escrow frozen. SURCON/NIS will review and resolve.', '', 7000);
-
-  } catch (err) {
-    console.error(err);
-    showOutput('dispute-output',
-      '❌ Transaction failed:\n' + err.message +
-      '\n\nNote: Disputes can only be raised from SUBMITTED or APPROVED state.\nOnly the client or surveyor of the escrow can raise a dispute.',
-      'warning'
-    );
-  }
-};
-
-// ============================================================
-// REAL TRANSACTION: resolve_dispute (SURCON only)
-// V4: SURCON sets surveyor% — remainder refunded to client
-// ============================================================
-window.resolveDispute = async function() {
-  if (!walletAddress) { alert('Please connect your SURCON wallet first.'); return; }
-  const escrowId      = document.getElementById('dispute-resolve-escrow-id').value.trim();
-  const surveyorPctRaw = document.getElementById('dispute-surveyor-pct').value;
-  if (!escrowId || !escrowId.startsWith('0x')) { alert('Please enter a valid escrow object ID.'); return; }
-  const surveyorPct = parseInt(surveyorPctRaw);
-  if (isNaN(surveyorPct) || surveyorPct < 0 || surveyorPct > 100) {
-    alert('Please enter a valid percentage between 0 and 100.');
-    return;
-  }
-  const clientPct = 100 - surveyorPct;
-
-  if (!confirm(
-    'Resolve this dispute on-chain?\n\n' +
-    `→ Surveyor receives: ${surveyorPct}%\n` +
-    `→ Client receives:   ${clientPct}%\n\n` +
-    'This cannot be undone. The escrow will be marked COMPLETED.'
-  )) return;
-
-  const el = document.getElementById('dispute-resolve-output');
-  el.className = 'alert info'; el.textContent = '⏳ Building resolve_dispute transaction...\nWaiting for SURCON wallet approval...';
-  el.style.display = 'flex'; el.style.whiteSpace = 'pre-line';
-
-  try {
-    const tx = new Transaction();
-    tx.setSender(walletAddress);
-    tx.moveCall({
-      target: `${PACKAGE_ID}::${MODULE}::resolve_dispute`,
-      arguments: [
-        tx.object(escrowId),
-        tx.pure.u64(surveyorPct),
-      ],
-    });
-
-    const result = await signAndExecute(tx);
-
-    // Read PartialRefundIssued event
-    const events = result.events ?? [];
-    const refundEvt = events.find(e => e.type?.includes('PartialRefundIssued'));
-    const surAmt = refundEvt?.parsedJson?.surveyor_amount;
-    const cliAmt = refundEvt?.parsedJson?.client_amount;
-    const surStr = surAmt ? (surAmt/1e9).toFixed(4)+' SUI' : surveyorPct+'%';
-    const cliStr = cliAmt ? (cliAmt/1e9).toFixed(4)+' SUI' : clientPct+'%';
-
-    el.className = 'alert success';
-    el.textContent =
-      `✅ Dispute resolved on-chain!\n` +
-      `Escrow: ${escrowId}\n` +
-      `→ Surveyor received: ${surStr} (${surveyorPct}%)\n` +
-      `→ Client received:   ${cliStr} (${clientPct}%)\n` +
-      `State: COMPLETED\n` +
-      `Tx: ${result.digest}`;
-
-    showToast('⚖️ Dispute resolved!', `Surveyor ${surveyorPct}% · Client ${clientPct}% · Escrow completed.`, 'green', 7000);
-
-  } catch (err) {
-    console.error(err);
-    el.className = 'alert warning';
-    el.textContent = '❌ Transaction failed:\n' + err.message +
-      '\n\nMake sure:\n• This wallet is the regulatory_body of the escrow\n• The escrow is in DISPUTED state';
-  }
-};
-
-// ============================================================
-// Load storage URL from chain for SURCON document download
-// ============================================================
-window.surconDownloadDocFromEscrow = async function() {
-  const escrowId = document.getElementById('surcon-escrow-id').value.trim();
-  if (!escrowId || !escrowId.startsWith('0x')) {
-    alert('Please enter the escrow Object ID first.');
-    return;
-  }
-  showSurconApproveOutput('⏳ Fetching escrow data from chain...', 'info');
-  try {
-    const obj = await suiClient.getObject({
-      id: escrowId,
-      options: { showContent: true, showDisplay: true }
-    });
-    // Try to find storage_url from dynamic fields
-    const dynFields = await suiClient.getDynamicFields({ parentId: escrowId });
-    let storageUrl = '';
-    for (const field of dynFields.data) {
-      if (field.name?.value === 'DocumentFieldsKey' || field.objectType?.includes('DocumentFields')) {
-        const df = await suiClient.getDynamicFieldObject({ parentId: escrowId, name: field.name });
-        const content = df?.data?.content?.fields;
-        storageUrl = content?.value?.fields?.storage_url ?? content?.storage_url ?? '';
-        if (storageUrl && Array.isArray(storageUrl)) {
-          storageUrl = new TextDecoder().decode(new Uint8Array(storageUrl));
-        }
-        break;
-      }
-    }
-    if (storageUrl) {
-      showSurconApproveOutput('✅ Storage URL found: ' + storageUrl + '\n\nDownloading...', 'success');
-      const a = document.createElement('a');
-      a.href = storageUrl; a.target = '_blank'; a.download = 'survey_document';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else {
-      showSurconApproveOutput('ℹ️ No storage URL found in dynamic fields.\nThis escrow may have used V1 (hash only) submission.\nCheck the on-chain hash: ' + (obj?.data?.content?.fields?.red_copy_hash || 'not found'), 'info');
-    }
-  } catch (err) {
-    console.error(err);
-    showSurconApproveOutput('❌ Could not fetch escrow: ' + err.message, 'warning');
-  }
-};
-
-// On page load: update wallet UI to "not connected" state
-window.addEventListener('load', () => {
-  updateWalletUI(null);
-});
-
-</script>
-
 <script>
 // ===== FEE DATA =====
 const fp=[150000,190000,210000,230000,250000,265000,275000,295000,315000,335000,420000,505000,580000,665000,750000,835000,920000,995000,1060000,1145000];
@@ -2169,5 +1379,879 @@ function surconDownloadDoc(jobId, filename){
 
 // confirmRelease is defined in the ES module — SURCON toast notifications below
 </script>
+<script>
+// ============================================================
+// GeoPay V6 — Robust Sui Wallet Connect
+// Strategy:
+//   1. Listen for Wallet Standard registry (getWallets API) —
+//      the correct way extensions register themselves since 2023.
+//   2. Also scan legacy window keys for older wallets.
+//   3. On mobile: show deep-link buttons. No auto-popup.
+//   4. Only ONE connection attempt per user click — no retry loops.
+// ============================================================
+const PACKAGE_ID  = '0x537e7ab3acddaa671530f588ed3e2c79e48acd8480e7bdbbaeba8548a3c3050d';
+const MODULE      = 'geopay_escrow';
+const CLOCK_ID    = '0x6';
+const SURCON_ADDR = '0xf44f68ac7f90d87796c1e2d654be2b00651d25cf7ec83185519f8c939ff1307b';
+const RPC_URL     = 'https://fullnode.testnet.sui.io:443';
+
+let walletAddress = null;
+let walletAdapter = null;
+
+// ── Helpers ───────────────────────────────────────────────────
+function toBytes(str) { return Array.from(new TextEncoder().encode(str)); }
+function shortAddr(a) { return a ? a.slice(0,8)+'...'+a.slice(-4) : ''; }
+function isMobile()   { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+
+function calcFeeMist(area, type) {
+  const fp=[150000000,190000000,210000000,230000000,250000000,265000000,275000000,295000000,315000000,335000000,420000000,505000000,580000000,665000000,750000000,835000000,920000000,995000000,1060000000,1145000000];
+  const fc=[225000000,285000000,315000000,345000000,375000000,397500000,412500000,442500000,472500000,502500000,630000000,757500000,870000000,997500000,1125000000,1252500000,1380000000,1492500000,1590000000,1717500000];
+  const tiers=[690,1160,1620,2090,2550,3020,3480,3950,4410,4880,7200,10000,20000,50000,100000,150000,200000,300000,400000,500000];
+  for (let i=0;i<tiers.length;i++) { if (area<=tiers[i]) return (type==='p'?fp:fc)[i]; }
+  return type==='p' ? Math.floor(area/10000)*15000000 : Math.floor(area/10000)*22500000;
+}
+
+// ── Wallet catalogue ──────────────────────────────────────────
+// standardName  — exact name the extension registers in the Wallet Standard
+// extensionKeys — legacy window.xxx fallback paths
+// deepLink      — mobile app deep link (opens the wallet app)
+// mobileInstall — app store URL shown on mobile
+const KNOWN_WALLETS = [
+  {
+    id: 'sui',
+    name: 'Sui Wallet',
+    iconEmoji: '🌊',
+    icon: 'https://sui.io/favicon.ico',
+    desc: 'Official Sui wallet by Mysten Labs',
+    standardNames: ['Sui Wallet'],
+    extensionKeys: ['suiWallet'],
+    deepLink: 'https://suiwallet.com/dapp?url=' + encodeURIComponent(location.href),
+    installUrl: 'https://suiwallet.com',
+    mobileInstall: 'https://suiwallet.com',
+  },
+  {
+    id: 'slush',
+    name: 'Slush',
+    iconEmoji: '❄️',
+    icon: 'https://slush.app/favicon.ico',
+    desc: 'Next-gen Sui wallet by Mysten Labs',
+    standardNames: ['Slush', 'Slush Wallet', 'slush', 'Sui Wallet (Slush)'],
+    extensionKeys: ['slush', '__slush', 'slushWallet'],
+    deepLink: 'slush://dapp/' + encodeURIComponent(location.href),
+    installUrl: 'https://chromewebstore.google.com/detail/slush-sui-wallet/fkgnbeijcnpnjagiemkfdhcaachkgdpe',
+    mobileInstall: 'https://slush.app',
+  },
+  {
+    id: 'okx',
+    name: 'OKX Wallet',
+    iconEmoji: '⭕',
+    icon: 'https://static.okx.com/cdn/assets/imgs/247/58E63FEA47A2B7D7.png',
+    desc: 'Multi-chain wallet · extension & mobile',
+    standardNames: ['OKX Wallet'],
+    extensionKeys: ['okxwallet'],
+    deepLink: 'okx://wallet/dapp/url?dappUrl=' + encodeURIComponent(location.href),
+    installUrl: 'https://www.okx.com/download',
+    mobileInstall: 'https://www.okx.com/download',
+  },
+  {
+    id: 'nightly',
+    name: 'Nightly',
+    iconEmoji: '🌙',
+    icon: 'https://nightly.app/favicon.ico',
+    desc: 'Multi-chain · extension & mobile app',
+    standardNames: ['Nightly', 'Nightly Wallet'],
+    extensionKeys: ['nightly'],
+    deepLink: 'nightly://sui?url=' + encodeURIComponent(location.href),
+    installUrl: 'https://nightly.app',
+    mobileInstall: 'https://nightly.app',
+  },
+  {
+    id: 'ethos',
+    name: 'Ethos Wallet',
+    iconEmoji: '⚡',
+    icon: 'https://ethoswallet.xyz/favicon.ico',
+    desc: 'User-friendly Sui wallet',
+    standardNames: ['Ethos Sui Wallet', 'Ethos'],
+    extensionKeys: ['ethosWallet'],
+    deepLink: null,
+    installUrl: 'https://ethoswallet.xyz',
+    mobileInstall: null,
+  },
+  {
+    id: 'martian',
+    name: 'Martian',
+    iconEmoji: '👽',
+    icon: 'https://martianwallet.xyz/favicon.ico',
+    desc: 'Aptos & Sui wallet',
+    standardNames: ['Martian Sui Wallet', 'Martian'],
+    extensionKeys: ['martian'],
+    deepLink: null,
+    installUrl: 'https://martianwallet.xyz',
+    mobileInstall: null,
+  },
+];
+
+// ── Wallet Standard registry ───────────────────────────────────
+//
+// HOW SUI WALLETS INJECT:
+//
+//  • Slush (extension + in-app browser), Sui Wallet, Ethos, Martian, Nightly:
+//    They call registerWallet() from @mysten/wallet-standard.
+//    registerWallet() pushes the wallet into a global Wallets registry that
+//    is accessed via window.getWallets().get().
+//    They do NOT set a named global like window.slushWallet.
+//    They MAY inject before or after the page script runs (async in WebView).
+//
+//  • OKX Wallet (extension + in-app browser):
+//    Sets window.okxwallet AND also calls registerWallet().
+//    That is why OKX appears as "detected" — the legacy window key fallback works.
+//    Slush has no legacy window key, so it was invisible to the old code.
+//
+//  FIX:
+//    1. Intercept registerWallet() calls by installing our own listener BEFORE
+//       any wallet script runs — so we catch every wallet that registers, even
+//       those that inject synchronously before DOMContentLoaded.
+//    2. Also poll window.getWallets().get() on modal open as a safety net.
+//    3. Check window.{legacy keys} as a third fallback for older wallets.
+//
+// ─────────────────────────────────────────────────────────────
+
+// Internal registry — populated by interception + polling
+const _walletRegistry = new Map(); // name → wallet object (deduped by object reference)
+
+function _addToRegistry(w) {
+  if (!w || typeof w !== 'object') return;
+  const name = w.name || 'Unknown Wallet';
+  // Deduplicate by object reference
+  for (const existing of _walletRegistry.values()) {
+    if (existing === w) return;
+  }
+  _walletRegistry.set(name + '_' + _walletRegistry.size, w);
+}
+
+// Step 1: Install a global getWallets interceptor ASAP.
+// @mysten/wallet-standard's registerWallet() calls getWallets().register(wallet).
+// By providing our own getWallets shim we intercept every registration.
+(function _installGetWalletsShim() {
+  // If already installed by the real @mysten/wallet-standard, wrap it.
+  const existing = window.getWallets;
+  let _shimWallets = [];
+  const shimObj = {
+    get: () => {
+      // Merge: our intercepted list + anything from the real registry
+      const all = [..._shimWallets];
+      if (existing && typeof existing === 'function') {
+        try {
+          const real = existing();
+          const realList = typeof real?.get === 'function' ? real.get() : [];
+          realList.forEach(w => { if (!all.includes(w)) all.push(w); });
+        } catch(e) {}
+      }
+      return all;
+    },
+    register: (w) => {
+      if (!_shimWallets.includes(w)) _shimWallets.push(w);
+      _addToRegistry(w);
+      // Forward to the real registry if it exists
+      if (existing && typeof existing === 'function') {
+        try { existing()?.register?.(w); } catch(e) {}
+      }
+    },
+    on: (event, cb) => {
+      // Forward event subscriptions
+      if (existing && typeof existing === 'function') {
+        try { return existing()?.on?.(event, cb); } catch(e) {}
+      }
+      return () => {};
+    },
+  };
+  window.getWallets = () => shimObj;
+})();
+
+// Step 2: Listen for the Wallet Standard app-ready event.
+// Slush, Sui Wallet and others fire this when they are ready to register.
+window.addEventListener('wallet-standard:app-ready', (e) => {
+  try {
+    if (typeof e?.detail?.register === 'function') {
+      e.detail.register({ register: _addToRegistry });
+    }
+    // Slush mobile WebView variant: the event itself IS the wallet object
+    if (e?.detail?.features || typeof e?.detail?.connect === 'function') {
+      _addToRegistry(e.detail);
+    }
+  } catch(err) {}
+});
+
+// Step 3: Listen for the wallet-standard:register-wallet event.
+// Slush (and others) dispatch this to let apps know a new wallet is available.
+window.addEventListener('wallet-standard:register-wallet', (e) => {
+  try {
+    const detail = e?.detail ?? e;
+    if (typeof detail?.register === 'function') {
+      detail.register(_addToRegistry);
+    }
+    if (detail?.features || typeof detail?.connect === 'function') {
+      _addToRegistry(detail);
+    }
+  } catch(err) {}
+});
+
+// Step 3b: Dispatch app-ready event so Slush/Sui Wallet know we are listening.
+// This is the correct way to trigger wallet injection in WebView / in-app browsers.
+// Must be dispatched AFTER our listeners are installed.
+try {
+  window.dispatchEvent(new Event('wallet-standard:app-ready'));
+} catch(e) {}
+
+// Step 4: Poll getWallets() directly — catches any wallets that registered
+// before our shim was installed, or via the real @mysten/wallet-standard library.
+function _pollStandardRegistry() {
+  try {
+    const wallets = window.getWallets?.()?.get?.() ?? [];
+    wallets.forEach(_addToRegistry);
+  } catch(e) {}
+  // Also check navigator.wallets (Wallet Standard spec path)
+  try {
+    const navWallets = window.navigator?.wallets?.get?.() ?? [];
+    navWallets.forEach(_addToRegistry);
+  } catch(e) {}
+}
+
+// Step 5: Check legacy window globals — OKX, Slush, Sui Wallet, Nightly, etc.
+//
+// SLUSH INJECTION BEHAVIOUR (matches OKX pattern):
+//   Slush extension injects window.slush (not window.slushWallet).
+//   Slush mobile in-app browser injects window.__slush and also fires
+//   the wallet-standard:register-wallet event.
+//   We handle ALL three paths below so Slush is detected the same way OKX is.
+//
+function _pollLegacyGlobals() {
+  const checks = [
+    // [windowKey, suiSubKey, displayName]
+    // suiSubKey: if the wallet nests Sui provider under a sub-key (e.g. okxwallet.sui)
+    ['suiWallet',    null,       'Sui Wallet'],
+    // Slush paths: window.slush (extension), window.__slush (mobile WebView)
+    ['slush',        null,       'Slush'],
+    ['__slush',      null,       'Slush'],
+    ['slushWallet',  null,       'Slush'],     // legacy / older versions
+    // OKX: sets window.okxwallet AND window.okxwallet.sui
+    ['okxwallet',    'sui',      'OKX Wallet'],
+    ['okxwallet',    null,       'OKX Wallet'], // fallback if .sui not present
+    ['nightly',      null,       'Nightly'],
+    ['ethosWallet',  null,       'Ethos Wallet'],
+    ['martian',      null,       'Martian'],
+    ['suiet',        null,       'Suiet'],
+    ['glassWallet',  null,       'Glass Wallet'],
+    ['frontier',     null,       'Frontier Wallet'],
+  ];
+
+  const seen = new Set();
+  checks.forEach(([key, sub, hint]) => {
+    try {
+      let obj = window[key];
+      if (!obj) return;
+      if (sub) obj = obj[sub] ?? obj;
+      if (!obj || typeof obj !== 'object') return;
+      // Must look like a wallet provider
+      if (!(obj.features || Array.isArray(obj.accounts) || typeof obj.connect === 'function'
+            || typeof obj.requestPermissions === 'function' || typeof obj.getAccounts === 'function')) return;
+      // Deduplicate by object reference within this polling pass
+      if (seen.has(obj)) return;
+      seen.add(obj);
+      // Stamp a name without mutating the original object
+      let walletObj = obj;
+      if (!walletObj.name) {
+        try {
+          walletObj = Object.create(obj);
+          Object.defineProperty(walletObj, 'name', { value: hint, configurable: true, writable: true });
+        } catch(e) { walletObj = obj; }
+      }
+      _addToRegistry(walletObj);
+    } catch(e) {}
+  });
+
+  // ── Slush-specific: scan ALL window properties for Slush fingerprint ──
+  // Slush mobile WebView may inject under an unpredictable key.
+  // We detect it by looking for the 'sui:signTransaction' feature + name hint.
+  try {
+    Object.keys(window).forEach(key => {
+      try {
+        const obj = window[key];
+        if (!obj || typeof obj !== 'object') return;
+        const name = obj.name || obj.id || '';
+        const isSlush = name.toLowerCase().includes('slush') ||
+          (obj.features?.['sui:signTransaction'] && !name.toLowerCase().includes('okx') && !name.toLowerCase().includes('nightly'));
+        if (isSlush && (obj.features || typeof obj.connect === 'function')) {
+          const proxy = Object.create(obj);
+          if (!proxy.name) try { Object.defineProperty(proxy, 'name', { value: 'Slush', configurable: true }); } catch(e) {}
+          _addToRegistry(proxy);
+        }
+      } catch(e) {}
+    });
+  } catch(e) {}
+}
+
+// Public: get all currently-known wallets as [{ name, obj }]
+function getInstalledStandardWallets() {
+  _pollStandardRegistry();
+  _pollLegacyGlobals();
+  return Array.from(_walletRegistry.values())
+    .filter(w => w && (w.features || Array.isArray(w.accounts) || typeof w.connect === 'function'))
+    .map(w => ({ name: w.name || 'Unknown Wallet', obj: w }));
+}
+
+// Resolve a catalogue entry → live wallet object (or null)
+function resolveWallet(entry) {
+  const std = getInstalledStandardWallets();
+
+  // 1. Exact standard name match (most reliable — use wallet's own declared name)
+  for (const sn of entry.standardNames) {
+    const m = std.find(w => w.name === sn);
+    if (m?.obj) return m.obj;
+  }
+
+  // 2. Case-insensitive standard name match (handles minor version differences)
+  for (const sn of entry.standardNames) {
+    const snLower = sn.toLowerCase();
+    const m = std.find(w => w.name?.toLowerCase() === snLower);
+    if (m?.obj) return m.obj;
+  }
+
+  // 3. Partial name contains entry id (e.g. "slush" matches "Slush Wallet")
+  const m3 = std.find(w => w.name?.toLowerCase().includes(entry.id.toLowerCase()));
+  if (m3?.obj) return m3.obj;
+
+  // 4. Legacy window key fallback (same logic as OKX detection)
+  for (const key of entry.extensionKeys) {
+    try {
+      let obj = window;
+      for (const part of key.split('.')) { obj = obj?.[part]; }
+      // OKX nests Sui provider under .sui; apply same pattern to Slush if needed
+      if (entry.id === 'okx') obj = obj?.sui ?? obj;
+      if (entry.id === 'slush') obj = obj?.sui ?? obj;  // handle future Slush sub-provider
+      if (obj && typeof obj === 'object' &&
+          (obj.features || Array.isArray(obj.accounts) ||
+           typeof obj.connect === 'function' || typeof obj.getAccounts === 'function')) {
+        return obj;
+      }
+    } catch(e) {}
+  }
+
+  return null;
+}
+
+// ── Wallet Modal ──────────────────────────────────────────────
+function openWalletModal() {
+  const overlay = document.getElementById('wm-overlay');
+  const body    = document.getElementById('wm-body');
+  overlay.classList.add('open');
+
+  // Show a brief scanning state so in-app browsers (Slush, OKX, etc.) that
+  // inject their provider asynchronously have time to register before we render.
+  body.innerHTML = `<div class="wm-status"><span class="wm-spinner"></span>Scanning for wallets…</div>`;
+
+  // Poll immediately then retry — Slush WebView and some mobile in-app browsers
+  // inject their provider asynchronously, sometimes up to 600ms after page load.
+  _pollStandardRegistry();
+  _pollLegacyGlobals();
+
+  // Dispatch app-ready again in case Slush missed our earlier dispatch
+  try { window.dispatchEvent(new Event('wallet-standard:app-ready')); } catch(e) {}
+
+  const start = Date.now();
+  const countBefore = _walletRegistry.size;
+  const MAX_WAIT_MS = 800; // wait up to 800ms for slow injectors (Slush WebView)
+  const POLL_MS = 80;
+
+  function checkAndRender() {
+    _pollStandardRegistry();
+    _pollLegacyGlobals();
+    const elapsed = Date.now() - start;
+    const newWallets = _walletRegistry.size > countBefore;
+    if (newWallets || elapsed >= MAX_WAIT_MS) {
+      renderWalletList();
+    } else {
+      setTimeout(checkAndRender, POLL_MS);
+    }
+  }
+  setTimeout(checkAndRender, POLL_MS);
+}
+
+function closeWalletModal() {
+  document.getElementById('wm-overlay').classList.remove('open');
+}
+function wmOverlayClick(e) {
+  if (e.target === document.getElementById('wm-overlay')) closeWalletModal();
+}
+
+function renderWalletList() {
+  const body = document.getElementById('wm-body');
+  const detected = [];
+  const undetected = [];
+
+  // Catalogue wallets
+  KNOWN_WALLETS.forEach(entry => {
+    const obj = resolveWallet(entry);
+    if (obj) detected.push({ entry, obj });
+    else undetected.push({ entry });
+  });
+
+  // Unknown wallets: anything in the registry not covered by the catalogue
+  // This auto-detects ANY Sui-compatible injected wallet without catalogue entries.
+  const catalogueNames = new Set(KNOWN_WALLETS.flatMap(w => w.standardNames.map(n => n.toLowerCase())));
+  const catalogueIds   = new Set(KNOWN_WALLETS.map(w => w.id.toLowerCase()));
+  getInstalledStandardWallets().forEach(({ name, obj }) => {
+    const nl = name.toLowerCase();
+    const alreadyCovered =
+      catalogueNames.has(nl) ||
+      [...catalogueIds].some(id => nl.includes(id)) ||
+      detected.some(d => d.obj === obj);
+    if (!alreadyCovered) {
+      // Use the wallet's own icon (Wallet Standard exposes it as a data-URL)
+      const walletIcon = typeof obj.icon === 'string' ? obj.icon : null;
+      detected.unshift({
+        entry: {
+          id: 'auto_' + nl.replace(/\s+/g, '_'),
+          name,
+          iconEmoji: '💼',
+          icon: walletIcon,
+          desc: 'Sui-compatible wallet',
+          standardNames: [name],
+          extensionKeys: [],
+          deepLink: null,
+          installUrl: null,
+        },
+        obj,
+      });
+    }
+  });
+
+  let html = '';
+
+  // ── Detected extensions ──
+  if (detected.length) {
+    html += `<div class="wm-section-label">Detected — click to connect</div>`;
+    detected.forEach(({ entry }) => {
+      const ico = entry.icon
+        ? `<img src="${entry.icon}" onerror="this.style.display='none';this.nextSibling.style.display='block'" /><span style="display:none">${entry.iconEmoji||'💼'}</span>`
+        : entry.iconEmoji || '💼';
+      html += `<button class="wm-wallet-btn" onclick="connectToWallet('${entry.id}')">
+        <div class="wm-wallet-icon">${ico}</div>
+        <div><div class="wm-wallet-name">${entry.name}</div><div class="wm-wallet-desc">${entry.desc||''}</div></div>
+        <span class="wm-wallet-badge detected">Detected</span>
+      </button>`;
+    });
+  }
+
+  // ── Mobile deep links (only shown on mobile for wallets with deepLink) ──
+  if (isMobile()) {
+    const mobileEntries = undetected.filter(w => w.entry.deepLink);
+    // Also include detected wallets that have a deepLink as "open app" fallback
+    if (mobileEntries.length) {
+      html += `<div class="wm-section-label">Open in wallet app</div>`;
+      mobileEntries.forEach(({ entry }) => {
+        const ico = entry.icon
+          ? `<img src="${entry.icon}" onerror="this.style.display='none';this.nextSibling.style.display='block'" /><span style="display:none">${entry.iconEmoji||'💼'}</span>`
+          : entry.iconEmoji || '💼';
+        html += `<a class="wm-wallet-btn" href="${entry.deepLink}" onclick="closeWalletModal()">
+          <div class="wm-wallet-icon">${ico}</div>
+          <div><div class="wm-wallet-name">${entry.name}</div><div class="wm-wallet-desc">Tap to open in the ${entry.name} app</div></div>
+          <span class="wm-wallet-badge mobile">Open app</span>
+        </a>`;
+      });
+    }
+    // Show install links on mobile for wallets without deep link
+    const mobileInstallEntries = undetected.filter(w => !w.entry.deepLink && w.entry.mobileInstall);
+    if (mobileInstallEntries.length) {
+      html += `<div class="wm-section-label">Get a wallet</div>`;
+      mobileInstallEntries.slice(0,3).forEach(({ entry }) => {
+        const ico = entry.icon
+          ? `<img src="${entry.icon}" onerror="this.style.display='none';this.nextSibling.style.display='block'" /><span style="display:none">${entry.iconEmoji||'💼'}</span>`
+          : entry.iconEmoji || '💼';
+        html += `<a class="wm-wallet-btn" href="${entry.mobileInstall}" target="_blank" onclick="closeWalletModal()">
+          <div class="wm-wallet-icon">${ico}</div>
+          <div><div class="wm-wallet-name">${entry.name}</div><div class="wm-wallet-desc">${entry.desc||''}</div></div>
+          <span class="wm-wallet-badge install">Install →</span>
+        </a>`;
+      });
+    }
+  } else {
+    // Desktop: show install links for undetected wallets
+    if (undetected.length) {
+      html += `<div class="wm-section-label">Not installed</div>`;
+      undetected.slice(0,4).forEach(({ entry }) => {
+        const ico = entry.icon
+          ? `<img src="${entry.icon}" onerror="this.style.display='none';this.nextSibling.style.display='block'" /><span style="display:none">${entry.iconEmoji||'💼'}</span>`
+          : entry.iconEmoji || '💼';
+        html += `<a class="wm-wallet-btn" href="${entry.installUrl}" target="_blank" onclick="closeWalletModal()">
+          <div class="wm-wallet-icon">${ico}</div>
+          <div><div class="wm-wallet-name">${entry.name}</div><div class="wm-wallet-desc">${entry.desc||''}</div></div>
+          <span class="wm-wallet-badge install">Install →</span>
+        </a>`;
+      });
+    }
+  }
+
+  // Empty state
+  if (!detected.length) {
+    const emptyMsg = isMobile()
+      ? 'No wallet detected in this browser. Use the links above to open a wallet app, or install a browser wallet extension.'
+      : 'No Sui wallet extension detected. Install one below and refresh the page.';
+    html = `<div class="wm-status" style="padding-top:6px">${emptyMsg}</div>` + html;
+  }
+
+  body.innerHTML = html;
+}
+
+// ── Connect to a specific wallet (called from modal button) ───
+async function connectToWallet(walletId) {
+  const body = document.getElementById('wm-body');
+  body.innerHTML = `<div class="wm-status"><span class="wm-spinner"></span>Connecting…</div>`;
+
+  try {
+    // Look up in catalogue first
+    let entry = KNOWN_WALLETS.find(w => w.id === walletId);
+    let obj = null;
+
+    if (entry) {
+      obj = resolveWallet(entry);
+    } else {
+      // Auto-detected wallet — look it up by name in the registry
+      // walletId is like "auto_slush_wallet" → extract the name
+      const registered = getInstalledStandardWallets();
+      // Try partial match on id (strip "auto_" prefix and replace underscores)
+      const idHint = walletId.replace(/^(auto_|ext_)/, '').replace(/_/g, ' ');
+      const match = registered.find(w =>
+        w.name.toLowerCase().includes(idHint.toLowerCase()) ||
+        idHint.toLowerCase().includes(w.name.toLowerCase())
+      ) || registered.find(w => walletId.includes(w.name.toLowerCase().replace(/\s+/g, '_')));
+      if (match) {
+        obj = match.obj;
+        entry = { id: walletId, name: match.name, standardNames: [match.name], extensionKeys: [] };
+      }
+    }
+
+    if (!obj) throw new Error('Wallet not found. Make sure it is installed and unlocked, then try again.');
+
+    // Per Wallet Standard spec: check accounts first (previously-authorized = no popup needed)
+    // Only call connect() if accounts is empty.
+    let accounts = [];
+    if (Array.isArray(obj.accounts) && obj.accounts.length) {
+      accounts = obj.accounts.map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+    }
+    if (!accounts.length) {
+      accounts = await requestAccounts(obj);
+    }
+    if (!accounts.length) throw new Error('No accounts returned. Unlock your wallet and try again.');
+
+    walletAddress = accounts[0];
+    walletAdapter  = obj;
+    closeWalletModal();
+    onWalletConnected(walletAddress, (entry?.name) || walletId);
+
+  } catch (err) {
+    console.error('[GeoPay] connect error:', err);
+    const msg = (err?.message?.includes('User rejected') || err?.code === 4001 || err?.message?.includes('rejected'))
+      ? 'Connection rejected. You can try again when ready.'
+      : (err?.message || 'Connection failed. Please try again.');
+    body.innerHTML = `
+      <div class="wm-status" style="color:var(--red);padding:18px 12px">❌ ${msg}</div>
+      <div style="padding:0 16px 14px">
+        <button class="btn btn-primary" onclick="renderWalletList()">← Back to wallets</button>
+      </div>`;
+  }
+}
+
+// ── Request accounts — handles all Wallet Standard + legacy APIs ──
+async function requestAccounts(w) {
+  // 1. Wallet Standard: standard:connect feature (correct for Sui Wallet, Slush, OKX, Nightly)
+  const stdConnect = w.features?.['standard:connect']?.connect;
+  if (stdConnect) {
+    const result = await stdConnect({ silent: false });          // opens wallet popup once
+    const accs = (result?.accounts ?? []).map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+    if (accs.length) return accs;
+  }
+
+  // 2. Already-authorized accounts (silent check before any popup)
+  if (Array.isArray(w.accounts) && w.accounts.length) {
+    return w.accounts.map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+  }
+
+  // 3. Legacy .connect() (older extensions)
+  if (typeof w.connect === 'function') {
+    const result = await w.connect();
+    const accs = (result?.accounts ?? []).map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+    if (accs.length) return accs;
+    if (result?.address) return [result.address];
+  }
+
+  // 4. Legacy requestPermissions (old Sui Wallet API)
+  if (typeof w.requestPermissions === 'function') {
+    await w.requestPermissions({ permissions: ['viewAccount', 'suggestTransactions'] });
+    const accs = await w.getAccounts?.() ?? [];
+    return accs.map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+  }
+
+  // 5. Plain getAccounts (if already connected)
+  if (typeof w.getAccounts === 'function') {
+    const accs = await w.getAccounts();
+    return accs.map(a => typeof a === 'string' ? a : a?.address).filter(Boolean);
+  }
+
+  return [];
+}
+
+// ── Main entry points ─────────────────────────────────────────
+function connectWallet() {
+  if (walletAddress) { disconnectWallet(); return; }
+  openWalletModal();
+}
+
+function disconnectWallet() {
+  // Attempt standard:disconnect if supported (silent — no popup)
+  try { walletAdapter?.features?.['standard:disconnect']?.disconnect?.(); } catch(e) {}
+  walletAddress = null;
+  walletAdapter  = null;
+  updateWalletUI(null);
+  showToast('👋 Disconnected', 'Wallet disconnected.', '', 3000);
+}
+
+function onWalletConnected(address, walletName) {
+  updateWalletUI(address, walletName);
+  checkWalletForSurcon(address);
+  showToast('✅ Wallet connected!', (walletName || 'Wallet') + ' · ' + shortAddr(address), 'green', 4000);
+}
+
+function updateWalletUI(address) {
+  const pill = document.getElementById('wallet-pill-display');
+  const btn  = document.getElementById('connect-wallet-btn');
+  if (address) {
+    if (pill) pill.innerHTML = `<div class="wallet-dot"></div>${shortAddr(address)}`;
+    if (btn)  { btn.textContent = '🔓 Disconnect'; btn.disabled = false; }
+  } else {
+    if (pill) pill.innerHTML = `<div class="wallet-dot" style="background:#f59e0b"></div>Not connected`;
+    if (btn)  { btn.textContent = '🔗 Connect Wallet'; btn.disabled = false; }
+  }
+}
+
+// ── Sign & execute ────────────────────────────────────────────
+async function signAndExecute(txBytes) {
+  if (!walletAddress || !walletAdapter) throw new Error('Wallet not connected.');
+  const opts  = { showEffects: true, showEvents: true, showObjectChanges: true };
+  const acct  = { address: walletAddress };
+  const chain = 'sui:testnet';
+  let result;
+
+  // Try features in order of preference (newest API first)
+  const f_exec  = walletAdapter.features?.['sui:signAndExecuteTransaction']?.signAndExecuteTransaction;
+  const f_execB = walletAdapter.features?.['sui:signAndExecuteTransactionBlock']?.signAndExecuteTransactionBlock;
+  const f_sign  = walletAdapter.features?.['sui:signTransactionBlock']?.signTransactionBlock;
+
+  if (f_exec) {
+    result = await f_exec({ transaction: txBytes, options: opts, account: acct, chain });
+  } else if (f_execB) {
+    result = await f_execB({ transactionBlock: txBytes, options: opts, account: acct, chain });
+  } else if (f_sign) {
+    // Sign-only → relay via RPC
+    const signed = await f_sign({ transactionBlock: txBytes, account: acct, chain });
+    const res2 = await fetch(RPC_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'sui_executeTransactionBlock',
+        params: [signed.transactionBlockBytes, [signed.signature], opts, null] })
+    });
+    const d2 = await res2.json();
+    if (d2.error) throw new Error('Execute error: ' + d2.error.message);
+    result = d2.result;
+  } else if (typeof walletAdapter.signAndExecuteTransactionBlock === 'function') {
+    result = await walletAdapter.signAndExecuteTransactionBlock({ transactionBlock: txBytes, options: opts });
+  } else if (typeof walletAdapter.signAndExecuteTransaction === 'function') {
+    result = await walletAdapter.signAndExecuteTransaction({ transaction: txBytes, options: opts });
+  } else {
+    throw new Error('Your wallet does not support transaction signing. Please update your wallet.');
+  }
+
+  if (result?.effects?.status?.status === 'failure') {
+    throw new Error('Transaction failed: ' + (result.effects.status.error || 'Unknown error'));
+  }
+  return result;
+}
+
+async function buildAndExecute(fn, args, gasBudget = 100000000) {
+  if (!walletAddress) throw new Error('Wallet not connected. Please connect first.');
+  const res = await fetch(RPC_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'unsafe_moveCall', params: [{
+      signer: walletAddress,
+      packageObjectId: PACKAGE_ID,
+      module: MODULE,
+      function: fn,
+      typeArguments: [],
+      arguments: args,
+      gas: null,
+      gasBudget: gasBudget.toString(),
+    }]})
+  });
+  const data = await res.json();
+  if (data.error) throw new Error('RPC build error: ' + data.error.message);
+  return signAndExecute(data.result);
+}
+
+async function getCoins() {
+  const res = await fetch(RPC_URL, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'suix_getCoins', params:[walletAddress,'0x2::sui::SUI',null,null] }) });
+  const data = await res.json();
+  return data.result?.data ?? [];
+}
+
+// ── Attach Wallet Standard listeners early ────────────────────
+// ── Transactions ──────────────────────────────────────────────
+window.createEscrowV1 = async function() {
+  document.getElementById('escrow-id-box').style.display='none';
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const surveyor=document.getElementById('surveyor-addr').value.trim();
+  if (!surveyor?.startsWith('0x')){alert('Enter a valid surveyor address.');return;}
+  const jobId=document.getElementById('job-id').value.trim()||'JOB-001';
+  const desc=document.getElementById('escrow-desc').value.trim()||'Survey';
+  const areaN=parseInt(document.getElementById('escrow-area').value)||500;
+  const typeStr=document.getElementById('escrow-type').value;
+  const feeMist=calcFeeMist(areaN,typeStr);
+  showOutput('escrow-output','⏳ Building create_escrow...\nWaiting for wallet approval...','info');
+  try {
+    const coins=await getCoins();
+    const coin=coins.find(c=>BigInt(c.balance)>=BigInt(feeMist));
+    if (!coin) throw new Error(`Insufficient SUI. Need ${(feeMist/1e9).toFixed(3)} SUI.`);
+    const result=await buildAndExecute('create_escrow',[coin.coinObjectId,surveyor,SURCON_ADDR,toBytes(jobId),toBytes(desc),areaN.toString(),(typeStr==='p'?0:1).toString()]);
+    const created=result.objectChanges?.find(o=>o.type==='created'&&o.objectType?.includes('SurveyEscrow'));
+    const escrowId=created?.objectId??'See explorer';
+    showOutput('escrow-output',`✅ Escrow created!\nID: ${escrowId}\nFee: ${(feeMist/1e9).toFixed(3)} SUI\nTx: ${result.digest}`);
+    showEscrowIdBox(escrowId);
+    showToast('🔒 Escrow created!',jobId+' · '+(feeMist/1e9).toFixed(3)+' SUI locked.','green',6000);
+  } catch(err){console.error(err);showOutput('escrow-output','❌ Error: '+err.message,'warning');}
+};
+
+window.createEscrowV2 = async function() {
+  document.getElementById('escrow-id-box').style.display='none';
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const deadlineVal=document.getElementById('escrow-deadline').value;
+  if (!deadlineVal){alert('Please pick a deadline date.');return;}
+  const chosen=new Date(deadlineVal+'T00:00:00'); const today=new Date(); today.setHours(0,0,0,0);
+  if (chosen<=today){alert('Deadline must be a future date.');return;}
+  const surveyor=document.getElementById('surveyor-addr').value.trim();
+  if (!surveyor?.startsWith('0x')){alert('Enter a valid surveyor address.');return;}
+  const jobId=document.getElementById('job-id').value.trim()||'JOB-001';
+  const desc=document.getElementById('escrow-desc').value.trim()||'Survey';
+  const areaN=parseInt(document.getElementById('escrow-area').value)||500;
+  const typeStr=document.getElementById('escrow-type').value;
+  const feeMist=calcFeeMist(areaN,typeStr);
+  const diff=Math.round((chosen-today)/(1000*60*60*24));
+  const label=chosen.toLocaleDateString('en-NG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  showOutput('escrow-output',`⏳ Building create_escrow_v2...\nDeadline: ${label}\nWaiting for wallet approval...`,'info');
+  try {
+    const coins=await getCoins();
+    const coin=coins.find(c=>BigInt(c.balance)>=BigInt(feeMist));
+    if (!coin) throw new Error(`Insufficient SUI. Need ${(feeMist/1e9).toFixed(3)} SUI.`);
+    const result=await buildAndExecute('create_escrow_v2',[coin.coinObjectId,surveyor,SURCON_ADDR,toBytes(jobId),toBytes(desc),areaN.toString(),(typeStr==='p'?0:1).toString(),CLOCK_ID]);
+    const created=result.objectChanges?.find(o=>o.type==='created'&&o.objectType?.includes('SurveyEscrow'));
+    const escrowId=created?.objectId??'See explorer';
+    showOutput('escrow-output',`✅ Escrow with deadline!\n📅 ${label} (${diff} days)\nFee: ${(feeMist/1e9).toFixed(3)} SUI\nTx: ${result.digest}`);
+    showEscrowIdBox(escrowId);
+    showToast('⏰ Escrow created!',label,'green',6000);
+  } catch(err){console.error(err);showOutput('escrow-output','❌ Error: '+err.message,'warning');}
+};
+
+window.submitRedCopyV1 = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('doc-escrow-id').value.trim();
+  const hash=document.getElementById('doc-hash').value.trim();
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  if (!hash){alert('Enter a document hash.');return;}
+  showOutput('doc-output','⏳ Submitting submit_red_copy...\nWaiting for wallet approval...','info');
+  try {
+    const result=await buildAndExecute('submit_red_copy',[escrowId,toBytes(hash)]);
+    showOutput('doc-output',`✅ Red Copy submitted! (V1)\nTx: ${result.digest}`);
+    showToast('📄 Document submitted!','Hash stored on-chain.','green',5000);
+  } catch(err){showOutput('doc-output','❌ Error: '+err.message,'warning');}
+};
+
+window.submitRedCopyV2 = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('doc-escrow-id').value.trim();
+  const hash=document.getElementById('doc-hash').value.trim();
+  const name=document.getElementById('doc-name').value.trim()||'document.dwg';
+  const fmt=document.getElementById('doc-format').value||'DWG';
+  const url=document.getElementById('doc-url').value.trim()||'';
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  if (!hash){alert('Enter a document hash.');return;}
+  showOutput('doc-output',`⏳ Submitting submit_red_copy_v2...\nFile: ${name} (${fmt})\nWaiting for wallet approval...`,'info');
+  try {
+    const result=await buildAndExecute('submit_red_copy_v2',[escrowId,toBytes(hash),toBytes(name),toBytes(fmt),toBytes(url),CLOCK_ID]);
+    showOutput('doc-output',`✅ Document submitted! (V2)\nFile: ${name} (${fmt})\nTx: ${result.digest}`);
+    showToast('📁 Document submitted!',name+' · SURCON notified.','green',6000);
+  } catch(err){showOutput('doc-output','❌ Error: '+err.message,'warning');}
+};
+
+window.confirmRelease = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('release-escrow-id').value.trim();
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  if (!confirm('Release payment? 30% → Surveyor, 70% → SURCON. Cannot be undone.')) return;
+  showOutput('release-output','⏳ Processing confirm_and_release...\nWaiting for wallet approval...','info');
+  try {
+    const result=await buildAndExecute('confirm_and_release',[escrowId]);
+    showOutput('release-output',`✅ Payment released!\n→ Surveyor: 30%\n→ SURCON/NIS: 70%\nTx: ${result.digest}`);
+    showToast('✅ Payment released!','30% Surveyor + 70% SURCON sent.','green',8000);
+  } catch(err){showOutput('release-output','❌ Error: '+err.message,'warning');}
+};
+
+window.cancelEscrow = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('cancel-escrow-id').value.trim();
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  if (!confirm('Cancel escrow? Full payment refunded to your wallet.')) return;
+  showOutput('cancel-output','⏳ Processing cancel_escrow...\nWaiting for wallet approval...','info');
+  try {
+    const result=await buildAndExecute('cancel_escrow',[escrowId]);
+    showOutput('cancel-output',`✅ Escrow cancelled!\nFull refund sent to your wallet.\nTx: ${result.digest}`);
+    showToast('❌ Escrow cancelled','Full refund sent.','',5000);
+  } catch(err){showOutput('cancel-output','❌ Error: '+err.message,'warning');}
+};
+
+window.claimExpired = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('expire-escrow-id').value.trim();
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  showOutput('expire-output','⏳ Processing claim_expired_refund...\nWaiting for wallet approval...','info');
+  try {
+    const result=await buildAndExecute('claim_expired_refund',[escrowId,CLOCK_ID]);
+    showOutput('expire-output',`✅ Refund claimed!\nSurveyor missed deadline. Full payment returned.\nTx: ${result.digest}`);
+    showToast('⏰ Expired refund claimed!','Full payment returned.','',5000);
+  } catch(err){showOutput('expire-output','❌ Error: '+err.message,'warning');}
+};
+
+window.regulatoryApprove = async function() {
+  if (!walletAddress){alert('Please connect your wallet first.');return;}
+  const escrowId=document.getElementById('surcon-escrow-id').value.trim();
+  if (!escrowId?.startsWith('0x')){alert('Enter a valid escrow object ID.');return;}
+  if (!confirm('Approve this document on-chain? Moves escrow SUBMITTED → APPROVED.')) return;
+  showOutput('surcon-approve-output','⏳ Processing regulatory_approve...\nWaiting for wallet approval...','info');
+  try {
+    const result=await buildAndExecute('regulatory_approve',[escrowId,CLOCK_ID]);
+    showOutput('surcon-approve-output',`✅ Approved on-chain!\nEscrow: SUBMITTED → APPROVED\nClient can now release payment.\nTx: ${result.digest}`);
+    showToast('🏛️ Document approved!','Client can now release payment.','green',6000);
+  } catch(err){showOutput('surcon-approve-output','❌ Error: '+err.message,'warning');}
+};
+
+// ── Init ──────────────────────────────────────────────────────
+window.connectWallet    = connectWallet;
+window.disconnectWallet = disconnectWallet;
+window.connectToWallet  = connectToWallet;
+window.openWalletModal  = openWalletModal;
+window.closeWalletModal = closeWalletModal;
+window.wmOverlayClick   = wmOverlayClick;
+window.renderWalletList = renderWalletList;
+updateWalletUI(null);
+console.log('✅ GeoPay V8 V7 ready — injection-aware wallet detection, Slush + all Wallet Standard providers');
+</script>
+
 </body>
 </html>
