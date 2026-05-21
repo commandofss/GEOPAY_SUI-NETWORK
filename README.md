@@ -27,7 +27,7 @@ In many emerging markets like Nigeria, the surveying industry faces critical cha
 
 | Problem | Description |
 | :--- | :--- |
-| **Regulatory Compliance** | Difficult to track if surveyors adhere to SURCON/KW-GIS mandated fee scales |
+| **Regulatory Compliance** | Difficult to track if surveyors adhere to SURCON/KW-GIS mandated fee scales( such as surveyor doing over chaging and undercutting for client |
 | **Economic Leakage** | Government and professional bodies struggle to collect administrative dues efficiently |
 | **Payment Trust** | The *"Red Copy"* (official survey document) is often withheld due to payment disputes |
 
