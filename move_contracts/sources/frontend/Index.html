@@ -1019,23 +1019,35 @@ let walletAdapter = null; // the connected wallet object
 // WALLET DETECTION & CONNECTION
 // ============================================================
 async function detectWallets() {
-  // Sui standard wallets register on window.suiWallet or window.__suiWallets or
-  // via the Wallet Standard (window.navigator.wallets / window.wallets)
   const candidates = [];
 
-  // Legacy Sui Wallet
-  if (window.suiWallet)      candidates.push({ name: 'Sui Wallet',   obj: window.suiWallet });
-  // Martian
-  if (window.martian?.sui)   candidates.push({ name: 'Martian',      obj: window.martian.sui });
-  // Ethos
-  if (window.ethosWallet)    candidates.push({ name: 'Ethos Wallet', obj: window.ethosWallet });
-  // Nightly
-  if (window.nightly?.sui)   candidates.push({ name: 'Nightly',      obj: window.nightly.sui });
-  // Wallet Standard (Slush, OKX, etc.)
-  if (window.navigator?.wallets) {
-    const reg = window.navigator.wallets.get?.() ?? [];
-    for (const w of reg) candidates.push({ name: w.name, obj: w });
+  // ── Wallet Standard (Slush, Sui Wallet v2+, OKX, etc.) ──
+  // Modern wallets register via window.navigator.wallets (Chrome) or window.wallets
+  const registries = [
+    window.navigator?.wallets,
+    window.wallets,
+    window.__suiWallets,
+  ].filter(Boolean);
+
+  for (const registry of registries) {
+    const wallets = typeof registry.get === 'function'
+      ? registry.get()
+      : Array.isArray(registry) ? registry : [];
+    for (const w of wallets) {
+      if (w && (w.name || w.accounts)) {
+        candidates.push({ name: w.name || 'Sui Wallet', obj: w });
+      }
+    }
   }
+
+  // ── Legacy APIs (older extensions) ──
+  if (window.suiWallet)    candidates.push({ name: 'Sui Wallet (legacy)', obj: window.suiWallet });
+  if (window.martian?.sui) candidates.push({ name: 'Martian', obj: window.martian.sui });
+  if (window.ethosWallet)  candidates.push({ name: 'Ethos',   obj: window.ethosWallet });
+  if (window.nightly?.sui) candidates.push({ name: 'Nightly', obj: window.nightly.sui });
+
+  // ── Slush-specific fallback: it may expose via window.slushWallet ──
+  if (window.slushWallet)  candidates.push({ name: 'Slush',   obj: window.slushWallet });
 
   return candidates;
 }
@@ -1045,10 +1057,22 @@ async function connectWallet() {
   if (btn) { btn.textContent = '⏳ Connecting...'; btn.disabled = true; }
 
   try {
+    // Give wallet extensions 500ms to inject if page just loaded
+    await new Promise(r => setTimeout(r, 500));
+
     const wallets = await detectWallets();
 
     if (wallets.length === 0) {
-      alert('No Sui wallet detected.\n\nPlease install Sui Wallet, Slush, Martian, or any Sui-compatible wallet extension, then refresh this page.');
+      // Last resort — try the Wallet Standard getWallets() global
+      if (typeof window.getWallets === 'function') {
+        const reg = window.getWallets();
+        const all = reg.get?.() ?? [];
+        for (const w of all) wallets.push({ name: w.name, obj: w });
+      }
+    }
+
+    if (wallets.length === 0) {
+      alert('No Sui wallet detected.\n\nMake sure:\n1. Slush/Sui wallet extension is installed\n2. The extension is ENABLED for this site\n3. Try refreshing the page\n\nThen click Connect again.');
       if (btn) { btn.textContent = '🔗 Connect Wallet'; btn.disabled = false; }
       return;
     }
@@ -1057,20 +1081,51 @@ async function connectWallet() {
     const chosen = wallets[0];
     walletAdapter = chosen.obj;
 
-    // Request permissions / connect
+    // Try all known connection methods
     let accounts = [];
-    if (typeof walletAdapter.requestPermissions === 'function') {
-      await walletAdapter.requestPermissions({ permissions: ['viewAccount', 'suggestTransactions'] });
-      const res = await walletAdapter.getAccounts();
-      accounts = res.map(a => typeof a === 'string' ? a : a.address);
-    } else if (typeof walletAdapter.connect === 'function') {
-      const res = await walletAdapter.connect();
-      accounts = res?.accounts?.map(a => a.address) ?? res?.address ? [res.address] : [];
-    } else if (typeof walletAdapter.getAccounts === 'function') {
-      accounts = await walletAdapter.getAccounts();
+
+    // Wallet Standard connect()
+    if (typeof walletAdapter.connect === 'function') {
+      try {
+        const res = await walletAdapter.connect();
+        accounts = res?.accounts?.map(a => typeof a === 'string' ? a : a.address)
+          ?? (res?.address ? [res.address] : []);
+      } catch(e) { console.warn('connect() failed:', e); }
     }
 
-    if (!accounts || accounts.length === 0) throw new Error('No accounts returned from wallet.');
+    // Wallet Standard features API (Slush uses this)
+    if (accounts.length === 0 && walletAdapter.features?.['standard:connect']) {
+      try {
+        const res = await walletAdapter.features['standard:connect'].connect();
+        accounts = res?.accounts?.map(a => a.address) ?? [];
+      } catch(e) { console.warn('features connect failed:', e); }
+    }
+
+    // Legacy requestPermissions (old Sui Wallet)
+    if (accounts.length === 0 && typeof walletAdapter.requestPermissions === 'function') {
+      try {
+        await walletAdapter.requestPermissions({ permissions: ['viewAccount', 'suggestTransactions'] });
+        const res = await walletAdapter.getAccounts();
+        accounts = res.map(a => typeof a === 'string' ? a : a.address);
+      } catch(e) { console.warn('requestPermissions failed:', e); }
+    }
+
+    // getAccounts fallback
+    if (accounts.length === 0 && typeof walletAdapter.getAccounts === 'function') {
+      try {
+        const res = await walletAdapter.getAccounts();
+        accounts = res.map(a => typeof a === 'string' ? a : a.address);
+      } catch(e) { console.warn('getAccounts failed:', e); }
+    }
+
+    // accounts property directly
+    if (accounts.length === 0 && Array.isArray(walletAdapter.accounts)) {
+      accounts = walletAdapter.accounts.map(a => typeof a === 'string' ? a : a.address);
+    }
+
+    if (!accounts || accounts.length === 0) {
+      throw new Error('Wallet connected but no accounts returned. Please unlock your wallet and try again.');
+    }
 
     walletAddress = accounts[0];
     onWalletConnected(walletAddress, chosen.name);
@@ -1122,30 +1177,49 @@ async function signAndExecute(tx) {
   if (!walletAddress || !walletAdapter) throw new Error('Wallet not connected. Please connect your wallet first.');
 
   const txBytes = await tx.build({ client: suiClient });
+  const opts = { showEffects: true, showEvents: true, showObjectChanges: true };
 
   let result;
-  // Try different wallet signing APIs
-  if (typeof walletAdapter.signAndExecuteTransactionBlock === 'function') {
-    result = await walletAdapter.signAndExecuteTransactionBlock({
-      transactionBlock: tx,
-      options: { showEffects: true, showEvents: true, showObjectChanges: true }
-    });
-  } else if (typeof walletAdapter.signAndExecuteTransaction === 'function') {
-    result = await walletAdapter.signAndExecuteTransaction({
-      transaction: tx,
-      options: { showEffects: true, showEvents: true, showObjectChanges: true }
-    });
-  } else if (typeof walletAdapter.features?.['sui:signAndExecuteTransaction']?.signAndExecuteTransaction === 'function') {
+
+  // 1. Wallet Standard: sui:signAndExecuteTransaction (Slush, modern wallets)
+  if (walletAdapter.features?.['sui:signAndExecuteTransaction']?.signAndExecuteTransaction) {
     result = await walletAdapter.features['sui:signAndExecuteTransaction'].signAndExecuteTransaction({
-      transaction: tx,
-      options: { showEffects: true, showEvents: true, showObjectChanges: true }
+      transaction: tx, options: opts
     });
-  } else {
-    throw new Error('Wallet does not support transaction signing. Please use a compatible Sui wallet.');
+  }
+  // 2. Wallet Standard: sui:signAndExecuteTransactionBlock (older standard)
+  else if (walletAdapter.features?.['sui:signAndExecuteTransactionBlock']?.signAndExecuteTransactionBlock) {
+    result = await walletAdapter.features['sui:signAndExecuteTransactionBlock'].signAndExecuteTransactionBlock({
+      transactionBlock: tx, options: opts
+    });
+  }
+  // 3. Direct method: signAndExecuteTransaction
+  else if (typeof walletAdapter.signAndExecuteTransaction === 'function') {
+    result = await walletAdapter.signAndExecuteTransaction({ transaction: tx, options: opts });
+  }
+  // 4. Direct method: signAndExecuteTransactionBlock (legacy)
+  else if (typeof walletAdapter.signAndExecuteTransactionBlock === 'function') {
+    result = await walletAdapter.signAndExecuteTransactionBlock({
+      transactionBlock: tx, options: opts
+    });
+  }
+  // 5. Sign then execute separately
+  else if (walletAdapter.features?.['sui:signTransaction']?.signTransaction) {
+    const { signature, bytes } = await walletAdapter.features['sui:signTransaction'].signTransaction({
+      transaction: tx
+    });
+    result = await suiClient.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature,
+      options: opts
+    });
+  }
+  else {
+    throw new Error('Wallet does not support transaction signing. Please use Slush or a compatible Sui wallet.');
   }
 
   if (result.effects?.status?.status === 'failure') {
-    throw new Error('Transaction failed on-chain: ' + (result.effects.status.error || 'Unknown error'));
+    throw new Error('Transaction failed: ' + (result.effects.status.error || 'Unknown error'));
   }
   return result;
 }
