@@ -1,1 +1,10 @@
 
+[package]
+name = "geopay"
+version = "0.0.4"
+edition = "2024.alpha"
+
+published-at = "0xdce69a787695732f11a8164dac2340bdd197a372a8bbe35b0e18ed9f942a8818"
+
+[addresses]
+geopay = "0x537e7ab3acddaa671530f588ed3e2c79e48acd8480e7bdbbaeba8548a3c3050d"
