@@ -979,8 +979,9 @@
 
 <!-- Sui SDK via CDN -->
 <script type="module">
-import { SuiClient, getFullnodeUrl } from 'https://esm.run/@mysten/sui/client';
-import { Transaction } from 'https://esm.run/@mysten/sui/transactions';
+// Use the stable CDN bundle — esm.run export names changed in newer versions
+import { SuiClient, getFullnodeUrl } from 'https://unpkg.com/@mysten/sui@1.21.1/dist/esm/client/index.js';
+import { Transaction } from 'https://unpkg.com/@mysten/sui@1.21.1/dist/esm/transactions/index.js';
 
 // ============================================================
 // CONSTANTS
