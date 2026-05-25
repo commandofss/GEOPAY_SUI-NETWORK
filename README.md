@@ -111,7 +111,7 @@ All 20 tiers from the official **Kwara State Minimum Scale of Fees** are encoded
 | Item | Value |
 | :--- | :--- |
 | **Network** | Sui Testnet |
-| **Package ID (V4 — Current)** | `0x537e7ab3acddaa671530f588ed3e2c79e48acd8480e7bdbbaeba8548a3c3050d` |
+| **Package ID (V5 — Current)** | `0x771247bed2dc43399ac0be195151c7c1922baab5429128a796228e5a463518d4` |
 | **Upgrade Cap** | `0x2b2ec8688decab1c02a141fc3ca7f7bd286275ad766d5a0e7871f30cfc10563d` |
 | **SURCON/NIS Address** | `0xf44f68ac7f90d87796c1e2d654be2b00651d25cf7ec83185519f8c939ff1307b` |
 | **Module** | `geopay_escrow` |
